@@ -1,24 +1,35 @@
 UTIL=
-MAIN=main.cpp
-BINARY=Main
+SERVER=server.cpp
+CLIENT=client.cpp
+BIN_SERVER=Server
+BIN_CLIENT=Client
 ZIP=Projeto_Parte1
 
 all:
-	g++ -Wall -g $(UTIL) $(MAIN) -o $(BINARY) -lm
+	g++ -Wall -g $(UTIL) $(SERVER) -o $(BIN_SERVER) -lm
+	g++ -Wall -g $(UTIL) $(CLIENT) -o $(BIN_CLIENT) -lm
 
-run:
-	./$(BINARY)
+run_server:
+	./$(BIN_SERVER)
+
+run_client:
+	./$(BIN_CLIENT)
 
 clear:
 	clear
 
-r: clear all run
+sv: clear all run_server
+
+client: clear all run_client
 	
 debug:
 	gcc -DDEBUG -Wall $(MAIN) $(UTIL) -o $(BINARY)
 
-valgrind:
-	valgrind --tool=memcheck --leak-check=full  --track-origins=yes --show-leak-kinds=all --show-reachable=yes ./$(BINARY)
+valgrind_server:
+	valgrind --tool=memcheck --leak-check=full  --track-origins=yes --show-leak-kinds=all --show-reachable=yes ./$(BIN_SERVER)
+
+valgrind_client:
+	valgrind --tool=memcheck --leak-check=full  --track-origins=yes --show-leak-kinds=all --show-reachable=yes ./$(BIN_CLIENT)
 
 clean:
 	@rm *.o
