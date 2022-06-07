@@ -2,11 +2,15 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <netdb.h>
 #include <arpa/inet.h>
 #include <string.h>
 #include <string>
 
 using namespace std;
+
+// int NI_MAXHOST = 1025; 
+// int NI_MAXSERV = 32;
 
 int main() {
 
@@ -21,7 +25,7 @@ int main() {
     hint.sin_port = htons(54000);
     inet_pton(AF_INET, "0.0.0.0", &hint.sin_addr);
 
-    if( bind(AF_INET, &hint, sizeof(hint)) == -1) {
+    if( bind(listening, (sockaddr*)&hint, sizeof(hint)) == -1) {
         cerr << "Can't bind to IP/Port";
         return -2;
     }
@@ -48,10 +52,10 @@ int main() {
     memset(host, 0, NI_MAXHOST);
     memset(svc, 0, NI_MAXSERV);
 
-    int result = getnameinfo((socketaddr*)&client, sizeof(client), host, NI_MAXHOST, svc, NI_MAXSERV, 0);
+    int result = getnameinfo((sockaddr*)&client, sizeof(client), host, NI_MAXHOST, svc, NI_MAXSERV, 0);
 
     if( result ) {
-        cout << host << " connected on " << service << endl;
+        cout << host << " connected on " << svc << endl;
     } else {
         inet_ntop(AF_INET, &client.sin_addr, host, NI_MAXHOST);
         cout << host << " connected on " << ntohs(client.sin_port) << endl;
@@ -61,7 +65,7 @@ int main() {
     while( true ) {
         memset( buf, 0, 4096 );
         int bytesRecv = recv(clientSocket, buf, 4096, 0);
-        if (bytesRec == -1) {
+        if (bytesRecv == -1) {
             cerr << "There was a connection issue" << endl;
             break;
         }
@@ -74,7 +78,9 @@ int main() {
 
         // Resend message
         send(clientSocket, buf, bytesRecv + 1, 0);
-
     }
+
+    close(clientSocket);
+
     return 0;
 }

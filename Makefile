@@ -9,6 +9,12 @@ all:
 	g++ -Wall -g $(UTIL) $(SERVER) -o $(BIN_SERVER) -lm
 	g++ -Wall -g $(UTIL) $(CLIENT) -o $(BIN_CLIENT) -lm
 
+make_server:
+	g++ -Wall -g $(UTIL) $(SERVER) -o $(BIN_SERVER) -lm
+
+make_client:
+	g++ -Wall -g $(UTIL) $(CLIENT) -o $(BIN_CLIENT) -lm
+
 run_server:
 	./$(BIN_SERVER)
 
@@ -18,9 +24,9 @@ run_client:
 clear:
 	clear
 
-sv: clear all run_server
+sv: clear make_server run_server
 
-client: clear all run_client
+client: clear make_client run_client
 	
 debug:
 	gcc -DDEBUG -Wall $(MAIN) $(UTIL) -o $(BINARY)
