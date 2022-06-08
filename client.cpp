@@ -40,6 +40,12 @@ int main()
     int bufsize = 4096;
     char buf[4096];
     string userInput;
+    
+    cout << endl;
+    cout << "------WELCOME TO SERVERLESS, YOUNG CLIENT--------" << endl;
+    cout << "-------------------------------------------------" << endl;
+    cout << "---Use the character '$' to finish the message---" << endl;
+    cout << endl;
 
     //	While loop:
     while ( true ) {

@@ -68,6 +68,13 @@ int main() {
 
     char buf[4096];
     int bufsize = 4096;
+    
+    cout << endl;
+    cout << "--------WELCOME TO THE SERVERLESS SERVER---------" << endl;
+    cout << "-------------------------------------------------" << endl;
+    cout << "---Use the character '$' to finish the message---" << endl;
+    cout << endl;
+
     while( true ) {
         memset( buf, 0, 4096 );
         // strcpy(buf, "=> Server connected...\n");
