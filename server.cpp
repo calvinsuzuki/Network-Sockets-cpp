@@ -77,21 +77,21 @@ int main() {
         memset( buf, 0, 4096 );
         // strcpy(buf, "=> Server connected...\n");
         send(server, buf, bufsize, 0);
-        cout << "=> Connected with the client #" << clientCount << ", you are good to go..." << endl;
-        cout << "\n=> Enter # to end the connection\n" << endl;
+        cout << "=> Connected with the client $" << clientCount << ", you are good to go..." << endl;
+        cout << "\n=> Enter $ to end the connection\n" << endl;
 
         while ( true ) {
             cout << "\nClient: ";
             do {
                 recv(server, buf, bufsize, 0);
                 cout << buf << " ";
-            } while (*buf != '#');
+            } while (*buf != '$');
 
             cout << "\nServer: ";
             do {
                 cin >> buf;
                 send(server, buf, bufsize, 0);
-            } while (*buf != '#');
+            } while (*buf != '$');
         }
 
         // inet_ntoa converts packet data to IP, which was taken from client

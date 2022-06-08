@@ -48,13 +48,13 @@ int main()
         do {
             cin >> buf;
             send(client, buf, bufsize, 0);
-        } while (*buf != '#');
+        } while (*buf != '$');
 
         cout << "\nServer: ";
         do {
             recv(client, buf, bufsize, 0);
             cout << buf << " ";
-        } while (*buf != '#');
+        } while (*buf != '$');
     }
 
     cout << "\n=> Connection terminated.\nGoodbye...\n";
