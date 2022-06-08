@@ -11,14 +11,11 @@ using namespace std;
 
 #define ERROR -1
 
-int main()
-{
+int main() {
     //	Create a socket
     int client = socket(AF_INET, SOCK_STREAM, 0);
     if (client == -1)
-    {
-        return ERROR;
-    }
+        return ERROR;    
 
     //	Create a hint structure for the server we're connecting with
     int port = 54400;
@@ -32,10 +29,8 @@ int main()
     //	Connect to the server on the socket
     int connectRes = connect(client, (sockaddr*)&hint, sizeof(hint));
     if (connectRes == -1)
-    {
         return ERROR;
-    }
-
+    
     // Control variables
     int bufsize = 4096;
     char buf[4096];
@@ -57,10 +52,6 @@ int main()
         } while (*buf != '$');
     }
 
-    cout << "\n=> Connection terminated.\nGoodbye...\n";
-
-    //	Close the socket
     close(client);
-
     return 0;
 }

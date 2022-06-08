@@ -70,7 +70,6 @@ int main() {
     int bufsize = 4096;
     while( true ) {
         memset( buf, 0, 4096 );
-        // strcpy(buf, "=> Server connected...\n");
         send(server, buf, bufsize, 0);
         cout << "=> Enter '$' at the end of the message" << endl;
 
@@ -88,15 +87,8 @@ int main() {
                 send(server, buf, bufsize, 0);
             } while (*buf != '$');
         }
-
-        // inet_ntoa converts packet data to IP, which was taken from client
-        cout << "\n\n=> Connection terminated with IP " << inet_ntoa(hint.sin_addr);
-        close(server);
-        cout << "\nGoodbye..." << endl;
-        exit(1);
     }
 
     close(server);
-
     return 0;
 }
