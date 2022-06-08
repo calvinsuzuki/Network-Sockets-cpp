@@ -14,8 +14,8 @@ using namespace std;
 int main()
 {
     //	Create a socket
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock == -1)
+    int client = socket(AF_INET, SOCK_STREAM, 0);
+    if (client == -1)
     {
         return ERROR;
     }
@@ -30,45 +30,37 @@ int main()
     inet_pton(AF_INET, ipAddress.c_str(), &hint.sin_addr);
 
     //	Connect to the server on the socket
-    int connectRes = connect(sock, (sockaddr*)&hint, sizeof(hint));
+    int connectRes = connect(client, (sockaddr*)&hint, sizeof(hint));
     if (connectRes == -1)
     {
         return ERROR;
     }
 
-    //	While loop:
+    // Control variables
+    bool isExit = false;
+    int bufsize = 4096;
     char buf[4096];
     string userInput;
 
-    do {
-        //		Enter lines of text
-        cout << "> ";
-        getline(cin, userInput);
+    //	While loop:
+    while ( true ) {
+        cout << "\nClient: ";
+        do {
+            cin >> buf;
+            send(client, buf, bufsize, 0);
+        } while (*buf != '#');
 
-        //		Send to server
-        int sendRes = send(sock, userInput.c_str(), userInput.size() + 1, 0);
-        if (sendRes == -1)
-        {
-            cout << "Could not send to server! Whoops!\r\n";
-            continue;
-        }
+        cout << "\nServer: ";
+        do {
+            recv(client, buf, bufsize, 0);
+            cout << buf << " ";
+        } while (*buf != '#');
+    }
 
-        //		Wait for response
-        memset(buf, 0, 4096);
-        int bytesReceived = recv(sock, buf, 4096, 0);
-        if (bytesReceived == -1)
-        {
-            cout << "There was an error getting response from server\r\n";
-        }
-        else
-        {
-            //		Display response
-            cout << "SERVER> " << string(buf, bytesReceived) << "\r\n";
-        }
-    } while(true);
+    cout << "\n=> Connection terminated.\nGoodbye...\n";
 
     //	Close the socket
-    close(sock);
+    close(client);
 
     return 0;
 }

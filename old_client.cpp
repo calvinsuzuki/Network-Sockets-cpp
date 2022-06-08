@@ -54,7 +54,7 @@ int main()
     */
 
     int client;
-    int portNum = 1500; // NOTE that the port number is same for both client and server
+    int portNum = 5050; // NOTE that the port number is same for both client and server
     bool isExit = false;
     int bufsize = 1024;
     char buffer[bufsize];
@@ -116,10 +116,10 @@ int main()
 
     /* ---------- CONNECTING THE SOCKET ---------- */
     /* ---------------- connect() ---------------- */
-
+    cout << "\n=> Trying to connect..." << endl;
     if (connect(client,(struct sockaddr *)&server_addr, sizeof(server_addr)) == 0)
         cout << "=> Connection to the server port number: " << portNum << endl;
-
+    cout << "\n=> Connected..." << endl;
     /* 
         The connect function is called by the client to 
         establish a connection to the server. It takes 
@@ -168,15 +168,6 @@ int main()
         cout << endl;
 
     } while (!isExit);
-
-    /* ---------------- CLOSE CALL ------------- */
-    /* ----------------- close() --------------- */
-
-    /* 
-        Once the server presses # to end the connection,
-        the loop will break and it will close the server 
-        socket connection and the client connection.
-    */
 
     cout << "\n=> Connection terminated.\nGoodbye...\n";
 

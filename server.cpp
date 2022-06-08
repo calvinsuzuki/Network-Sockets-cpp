@@ -15,6 +15,7 @@ int main() {
 
     int opt = true;
     int listening = socket(AF_INET, SOCK_STREAM, 0);
+    bool isExit=false;
     if (listening == -1) {
         cout << "SOCKET EXCEPTION: Could not create!";
         return ERROR;
@@ -48,9 +49,9 @@ int main() {
     char host[NI_MAXHOST];
     char svc[NI_MAXSERV];
 
-    int clientSocket = accept(listening, (sockaddr*)&client, &clientSize);
+    int server = accept(listening, (sockaddr*)&client, &clientSize);
 
-    if( clientSocket == -1) {
+    if( server == -1) {
         cout << "CONNECTION EXCEPTION: Client could not connect!";
         return ERROR;
     }
@@ -70,25 +71,38 @@ int main() {
     }
 
     char buf[4096];
+    int bufsize = 4096;
+    int clientCount = 1;
     while( true ) {
         memset( buf, 0, 4096 );
-        int bytesRecv = recv(clientSocket, buf, 4096, 0);
-        if (bytesRecv == -1) {
-            cout << "There was a connection issue" << endl;
-            break;
-        }
-        if ( bytesRecv == 0 ) {
-            cout << "The client disconnected" << endl;
-            break;
+        // strcpy(buf, "=> Server connected...\n");
+        send(server, buf, bufsize, 0);
+        cout << "=> Connected with the client #" << clientCount << ", you are good to go..." << endl;
+        cout << "\n=> Enter # to end the connection\n" << endl;
+
+        while ( true ) {
+            cout << "\nClient: ";
+            do {
+                recv(server, buf, bufsize, 0);
+                cout << buf << " ";
+            } while (*buf != '#');
+
+            cout << "\nServer: ";
+            do {
+                cin >> buf;
+                send(server, buf, bufsize, 0);
+            } while (*buf != '#');
         }
 
-        cout << "Received: " << string(buf, 0, bytesRecv) << endl;
-
-        // Resend message
-        send(clientSocket, buf, bytesRecv + 1, 0);
+        // inet_ntoa converts packet data to IP, which was taken from client
+        cout << "\n\n=> Connection terminated with IP " << inet_ntoa(hint.sin_addr);
+        close(server);
+        cout << "\nGoodbye..." << endl;
+        isExit = false;
+        exit(1);
     }
 
-    close(clientSocket);
+    close(server);
 
     return 0;
 }
