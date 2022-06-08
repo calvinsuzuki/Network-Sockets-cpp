@@ -15,7 +15,6 @@ int main() {
 
     int opt = true;
     int listening = socket(AF_INET, SOCK_STREAM, 0);
-    bool isExit=false;
     if (listening == -1) {
         cout << "SOCKET EXCEPTION: Could not create!";
         return ERROR;
@@ -31,7 +30,7 @@ int main() {
 
     sockaddr_in hint;
     hint.sin_family = AF_INET;
-    hint.sin_port = htons(54000);
+    hint.sin_port = htons(54400);
     inet_pton(AF_INET, "0.0.0.0", &hint.sin_addr);
 
     if( bind(listening, (sockaddr*)&hint, sizeof(hint)) == -1) {
@@ -63,24 +62,20 @@ int main() {
 
     int result = getnameinfo((sockaddr*)&client, sizeof(client), host, NI_MAXHOST, svc, NI_MAXSERV, 0);
 
-    if( result ) {
-        cout << host << " connected on " << svc << endl;
-    } else {
+    if( !result ) {
         inet_ntop(AF_INET, &client.sin_addr, host, NI_MAXHOST);
-        cout << host << " connected on " << ntohs(client.sin_port) << endl;
     }
 
     char buf[4096];
     int bufsize = 4096;
-    int clientCount = 1;
     while( true ) {
         memset( buf, 0, 4096 );
         // strcpy(buf, "=> Server connected...\n");
         send(server, buf, bufsize, 0);
-        cout << "=> Connected with the client $" << clientCount << ", you are good to go..." << endl;
-        cout << "\n=> Enter $ to end the connection\n" << endl;
+        cout << "=> Enter '$' at the end of the message" << endl;
 
         while ( true ) {
+            cout << "Waiting client message...";
             cout << "\nClient: ";
             do {
                 recv(server, buf, bufsize, 0);
@@ -98,7 +93,6 @@ int main() {
         cout << "\n\n=> Connection terminated with IP " << inet_ntoa(hint.sin_addr);
         close(server);
         cout << "\nGoodbye..." << endl;
-        isExit = false;
         exit(1);
     }
 

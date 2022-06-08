@@ -21,7 +21,7 @@ int main()
     }
 
     //	Create a hint structure for the server we're connecting with
-    int port = 54000;
+    int port = 54400;
     string ipAddress = "127.0.0.1";
 
     sockaddr_in hint;
@@ -37,7 +37,6 @@ int main()
     }
 
     // Control variables
-    bool isExit = false;
     int bufsize = 4096;
     char buf[4096];
     string userInput;
@@ -50,6 +49,7 @@ int main()
             send(client, buf, bufsize, 0);
         } while (*buf != '$');
 
+        cout << "Waiting server message...";
         cout << "\nServer: ";
         do {
             recv(client, buf, bufsize, 0);
