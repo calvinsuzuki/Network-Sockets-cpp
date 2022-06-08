@@ -9,16 +9,24 @@
 
 using namespace std;
 
-// int NI_MAXHOST = 1025; 
-// int NI_MAXSERV = 32;
+#define ERROR -1
 
 int main() {
 
+    int opt = true;
     int listening = socket(AF_INET, SOCK_STREAM, 0);
     if (listening == -1) {
-        cerr << "Could not create the socket!!";
-        return -1;
+        cout << "SOCKET EXCEPTION: Could not create!";
+        return ERROR;
     }
+
+    //set master socket to allow multiple connections , 
+    //this is just a good habit, it will work without this 
+    if( setsockopt(listening, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 )  
+    {  
+        perror("setsockopt");  
+        return ERROR;
+    } 
 
     sockaddr_in hint;
     hint.sin_family = AF_INET;
@@ -26,13 +34,13 @@ int main() {
     inet_pton(AF_INET, "0.0.0.0", &hint.sin_addr);
 
     if( bind(listening, (sockaddr*)&hint, sizeof(hint)) == -1) {
-        cerr << "Can't bind to IP/Port";
-        return -2;
+        cout << "BINDING EXCEPTION: Can't bind to IP/Port";
+        return ERROR;
     }
 
     if( listen(listening, SOMAXCONN) == -1 ) {
-        cerr << "Can't listen";
-        return -3;
+        cout << "LISTENING EXCEPTION: Can't listen";
+        return ERROR;
     }
 
     sockaddr_in client;
@@ -43,8 +51,8 @@ int main() {
     int clientSocket = accept(listening, (sockaddr*)&client, &clientSize);
 
     if( clientSocket == -1) {
-        cerr << "Error with client connection!";
-        return -4;
+        cout << "CONNECTION EXCEPTION: Client could not connect!";
+        return ERROR;
     }
 
     close(listening);
@@ -66,7 +74,7 @@ int main() {
         memset( buf, 0, 4096 );
         int bytesRecv = recv(clientSocket, buf, 4096, 0);
         if (bytesRecv == -1) {
-            cerr << "There was a connection issue" << endl;
+            cout << "There was a connection issue" << endl;
             break;
         }
         if ( bytesRecv == 0 ) {
