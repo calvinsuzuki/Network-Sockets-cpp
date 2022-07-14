@@ -5,7 +5,7 @@ using namespace std;
 #define ERROR -1
 
 int main() {   
-    Socket client(54400, "127.0.0.1");
+    Socket client(54400, "192.168.0.115");
 
     cout << client.startClient();
 }

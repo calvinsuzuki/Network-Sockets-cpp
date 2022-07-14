@@ -6,7 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Thu Jul 14 00:09:08 2022
+# Make data base, printed on Thu Jul 14 09:21:42 2022
 
 # Variables
 
@@ -75,7 +75,7 @@ MAKEFLAGS = pqrR
 # makefile
 CURDIR := /home/calvin/Documents/Network-Sockets-cpp
 # environment
-APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = true
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
 # automatic
 *D = $(patsubst %/,%,$(dir $*))
 # environment
@@ -101,7 +101,7 @@ SNAP_REEXEC =
 # automatic
 @F = $(notdir $@)
 # environment
-VSCODE_PID = 3353
+VSCODE_PID = 6064
 # environment
 XDG_SESSION_TYPE = x11
 # automatic
@@ -109,7 +109,7 @@ XDG_SESSION_TYPE = x11
 # environment
 BAMF_DESKTOP_FILE_HINT = /var/lib/snapd/desktop/applications/code_code.desktop
 # environment
-SESSION_MANAGER = local/alessa:@/tmp/.ICE-unix/719,unix/alessa:/tmp/.ICE-unix/719
+SESSION_MANAGER = local/alessa:@/tmp/.ICE-unix/696,unix/alessa:/tmp/.ICE-unix/696
 # automatic
 *F = $(notdir $*)
 # environment
@@ -164,7 +164,6 @@ SERVER = ./Server/server.cpp
 LC_TELEPHONE = pt_BR.UTF-8
 # automatic
 ?F = $(notdir $?)
- 
 # environment
 KDE_APPLICATIONS_AS_SCOPE = 1
 # environment
@@ -192,7 +191,7 @@ XDG_VTNR = 1
 # makefile
 .DEFAULT_GOAL := all
 # environment
-SYSTEMD_EXEC_PID = 625
+SYSTEMD_EXEC_PID = 603
 # environment
 DISPLAY = :0
 # environment
@@ -291,6 +290,7 @@ SNAP_LIBRARY_PATH = /var/lib/snapd/lib/gl:/var/lib/snapd/lib/gl32:/var/lib/snapd
 # Files
 
 valgrind_server:
+ 
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
@@ -431,7 +431,6 @@ sv: clear make_server run_server
 # Load=17/1024=2%, Rehash=0, Collisions=0/35=0%
 # VPATH Search Paths
 
- 
 # No 'vpath' search paths.
 
 # No general ('VPATH' variable) search path.
@@ -442,6 +441,6 @@ sv: clear make_server run_server
 # strcache performance: lookups = 54 / hit rate = 48%
 # hash-table stats:
 # Load=28/8192=0%, Rehash=0, Collisions=0/54=0%
-# Finished Make data base on Thu Jul 14 00:09:08 2022
+# Finished Make data base on Thu Jul 14 09:21:42 2022
 
  

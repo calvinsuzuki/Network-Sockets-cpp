@@ -14,29 +14,30 @@ using namespace std;
 class Socket {
     public:
         int port;
-        string targetIP;
-        Socket(int _port, string _targetIP) {
+        string ipAddrs;
+        Socket(int _port, string _ipAddrs) {
             port = _port;
-            targetIP = _targetIP;
-        }
-        Socket(int _port) {
-            port = _port;
+            ipAddrs = _ipAddrs;
         }
         int startClient() {
             //	Create a socket
             int client = socket(AF_INET, SOCK_STREAM, 0);
-            if (client == -1)
-                return ERROR;    
+            if (client == -1) {
+                cout << "SOCKET EXCEPTION: Could not create!";
+                return ERROR;  
+            }  
 
             sockaddr_in hint;
             hint.sin_family = AF_INET;
             hint.sin_port = htons(port);
-            inet_pton(AF_INET, targetIP.c_str(), &hint.sin_addr);
+            inet_pton(AF_INET, ipAddrs.c_str(), &hint.sin_addr);
 
             //	Connect to the server on the socket
             int connectRes = connect(client, (sockaddr*)&hint, sizeof(hint));
-            if (connectRes == -1)
+            if (connectRes == -1) {
+                cout << "CONNECT EXCEPTION: Server not reachable!";
                 return ERROR;
+            }
             
             // Control variables
             int bufsize = 4096;
@@ -84,11 +85,11 @@ class Socket {
                 perror("setsockopt");  
                 return ERROR;
             } 
-
+            
             sockaddr_in hint;
             hint.sin_family = AF_INET;
             hint.sin_port = htons(port);
-            inet_pton(AF_INET, "0.0.0.0", &hint.sin_addr);
+            inet_pton(AF_INET, ipAddrs.c_str(), &hint.sin_addr);
 
             if( bind(listening, (sockaddr*)&hint, sizeof(hint)) == -1) {
                 cout << "BINDING EXCEPTION: Can't bind to IP/Port";
