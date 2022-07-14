@@ -1,9 +1,9 @@
 UTIL=
-SERVER=server.cpp
-CLIENT=client.cpp
-BIN_SERVER=Server
-BIN_CLIENT=Client
-ZIP=Projeto_Parte1
+SERVER=./Server/server.cpp
+CLIENT=./Client/client.cpp
+BIN_SERVER=./Server/SERVER.bin
+BIN_CLIENT=./Client/CLIENT.bin
+ZIP=ProjetoFinal
 
 all:
 	g++ -Wall -g $(UTIL) $(SERVER) -o $(BIN_SERVER) -lm
