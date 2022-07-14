@@ -1,8 +1,8 @@
 UTIL=
 SERVER=./Server/server.cpp
 CLIENT=./Client/client.cpp
-BIN_SERVER=./Server/SERVER.bin
-BIN_CLIENT=./Client/CLIENT.bin
+BIN_SERVER=./Server/server.bin
+BIN_CLIENT=./Client/client.bin
 ZIP=ProjetoFinal
 
 all:
