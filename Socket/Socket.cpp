@@ -13,9 +13,9 @@ using namespace std;
 
 class Socket {
     public:
-        int port;
-        string ipAddrs;
-        Socket(int _port, string _ipAddrs) {
+        unsigned int port;
+        const char * ipAddrs;
+        Socket(unsigned int _port, const char * _ipAddrs) {
             port = _port;
             ipAddrs = _ipAddrs;
         }
@@ -30,7 +30,7 @@ class Socket {
             sockaddr_in hint;
             hint.sin_family = AF_INET;
             hint.sin_port = htons(port);
-            inet_pton(AF_INET, ipAddrs.c_str(), &hint.sin_addr);
+            inet_pton(AF_INET, ipAddrs, &hint.sin_addr);
 
             //	Connect to the server on the socket
             int connectRes = connect(client, (sockaddr*)&hint, sizeof(hint));
@@ -42,6 +42,7 @@ class Socket {
             // Control variables
             int bufsize = 4096;
             char buf[4096];
+            string str_buf;
             string userInput;
             
             cout << endl;
@@ -53,17 +54,15 @@ class Socket {
             //	While loop:
             while ( true ) {
                 cout << "\nClient: ";
-                do {
-                    cin >> buf;
-                    send(client, buf, bufsize, 0);
-                } while (*buf != '$');
+                sendMessage(client, 4096);
 
                 cout << "Waiting server message...";
+
                 cout << "\nServer: ";
                 do {
                     recv(client, buf, bufsize, 0);
-                    cout << buf << " ";
-                } while (*buf != '$');
+                    if (*buf != '$') cout << buf;
+                } while( *buf != '$');
             }
 
             close(client);
@@ -89,7 +88,7 @@ class Socket {
             sockaddr_in hint;
             hint.sin_family = AF_INET;
             hint.sin_port = htons(port);
-            inet_pton(AF_INET, ipAddrs.c_str(), &hint.sin_addr);
+            inet_pton(AF_INET, ipAddrs, &hint.sin_addr);
 
             if( bind(listening, (sockaddr*)&hint, sizeof(hint)) == -1) {
                 cout << "BINDING EXCEPTION: Can't bind to IP/Port";
@@ -143,14 +142,11 @@ class Socket {
                     cout << "\nClient: ";
                     do {
                         recv(server, buf, bufsize, 0);
-                        cout << buf << " ";
-                    } while (*buf != '$');
+                        if (*buf != '$') cout << buf;
+                    } while( *buf != '$');
 
                     cout << "\nServer: ";
-                    do {
-                        cin >> buf;
-                        send(server, buf, bufsize, 0);
-                    } while (*buf != '$');
+                    sendMessage(server, 4096);
                 }
             }
 
@@ -160,4 +156,39 @@ class Socket {
 
     protected:
     private:
+    int sendMessage(int client, int max_message_size) {
+        //max_message_size /= 2;
+        string plain_text, frag_text;
+        // Read the string
+        getline(cin, plain_text);
+
+        int toSend = (int) plain_text.length();
+
+        while( toSend > 0) {      
+            // Fragments the message
+            if (toSend >= max_message_size) {
+                frag_text = plain_text.substr(0, max_message_size);
+                plain_text = plain_text.substr(max_message_size, plain_text.length());
+                // Send message
+            } 
+            // When the message is already small enought
+            else {
+                frag_text = plain_text;
+            }
+
+            // Transform to array of char
+            char message[frag_text.length()];
+            strcpy( message, frag_text.c_str() );
+
+            //Send message
+            //cout << message;
+            send(client, message, max_message_size, 0);
+
+            //Subtracts the toSend variable
+            toSend -= frag_text.length();   
+        }
+
+        send(client, "$", max_message_size, 0);
+        return 0;
+    }
 };
