@@ -6,7 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Thu Jul 14 09:21:42 2022
+# Make data base, printed on Sun Jul 17 14:15:27 2022
 
 # Variables
 
@@ -23,6 +23,7 @@ SNAP_INSTANCE_KEY =
 # makefile (from 'Makefile', line 5)
 BIN_CLIENT = ./Client/client.bin
 # makefile (from 'Makefile', line 3)
+ 
 CLIENT = ./Client/client.cpp
 # environment
 LC_NAME = pt_BR.UTF-8
@@ -101,7 +102,7 @@ SNAP_REEXEC =
 # automatic
 @F = $(notdir $@)
 # environment
-VSCODE_PID = 6064
+VSCODE_PID = 1105
 # environment
 XDG_SESSION_TYPE = x11
 # automatic
@@ -109,7 +110,7 @@ XDG_SESSION_TYPE = x11
 # environment
 BAMF_DESKTOP_FILE_HINT = /var/lib/snapd/desktop/applications/code_code.desktop
 # environment
-SESSION_MANAGER = local/alessa:@/tmp/.ICE-unix/696,unix/alessa:/tmp/.ICE-unix/696
+SESSION_MANAGER = local/alessa:@/tmp/.ICE-unix/715,unix/alessa:/tmp/.ICE-unix/715
 # automatic
 *F = $(notdir $*)
 # environment
@@ -191,7 +192,7 @@ XDG_VTNR = 1
 # makefile
 .DEFAULT_GOAL := all
 # environment
-SYSTEMD_EXEC_PID = 603
+SYSTEMD_EXEC_PID = 626
 # environment
 DISPLAY = :0
 # environment
@@ -279,9 +280,9 @@ SNAP_LIBRARY_PATH = /var/lib/snapd/lib/gl:/var/lib/snapd/lib/gl32:/var/lib/snapd
 
 # Directories
 
-# . (device 2066, inode 931457): 10 files, no impossibilities.
+# . (device 2066, inode 931457): 12 files, no impossibilities.
 
-# 10 files, no impossibilities in 1 directories.
+# 12 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -290,7 +291,6 @@ SNAP_LIBRARY_PATH = /var/lib/snapd/lib/gl:/var/lib/snapd/lib/gl32:/var/lib/snapd
 # Files
 
 valgrind_server:
- 
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
@@ -338,6 +338,7 @@ make_server:
 #  File has not been updated.
 #  recipe to execute (from 'Makefile', line 13):
 	g++ -Wall -g $(UTIL) $(SERVER) -o $(BIN_SERVER) -lm
+ 
 
 valgrind_client:
 #  Implicit rule search has not been done.
@@ -435,12 +436,12 @@ sv: clear make_server run_server
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 28 / storage = 241 B / avg = 8 B
-# current buf: size = 8162 B / used = 241 B / count = 28 / avg = 8 B
+# strcache buffers: 1 (0) / strings = 30 / storage = 255 B / avg = 8 B
+# current buf: size = 8162 B / used = 255 B / count = 30 / avg = 8 B
 
-# strcache performance: lookups = 54 / hit rate = 48%
+# strcache performance: lookups = 56 / hit rate = 46%
 # hash-table stats:
-# Load=28/8192=0%, Rehash=0, Collisions=0/54=0%
-# Finished Make data base on Thu Jul 14 09:21:42 2022
+# Load=30/8192=0%, Rehash=0, Collisions=0/56=0%
+# Finished Make data base on Sun Jul 17 14:15:27 2022
 
  

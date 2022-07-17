@@ -9,19 +9,23 @@
 
 #include <netinet/in.h>
 #include <errno.h>
+#include <thread>
 #include <pthread.h>
 #include <signal.h>
+#include <atomic>
 
 using namespace std;
 
 #define ERROR -1
+#define BUFFER_SZ 4096
+#define MAX_CLIENTS 10
 
 class Socket {
     public:
         Socket(unsigned int _port, const char * _ipAddrs) {
             port = _port;
             ipAddrs = _ipAddrs;
-            hint = socketHandler( AF_INET );
+            hint = socketHandler();
         }
         
         int startClient() {
@@ -32,8 +36,8 @@ class Socket {
             socketConnect();
             
             // Control variables
-            int bufsize = 4096;
-            char buf[4096];
+            int bufsize = BUFFER_SZ;
+            char buf[BUFFER_SZ];
             string str_buf;
             string userInput;
             
@@ -42,7 +46,7 @@ class Socket {
             //	While loop:
             while ( true ) {
                 cout << "\nClient: ";
-                sendMessage(_socket, 4096);
+                sendMessage(_socket, BUFFER_SZ);
                 //cout << "Waiting server message...";
 
                 cout << "Server: ";
@@ -57,43 +61,64 @@ class Socket {
         }
 
         int startServer() {
+
+            // Start clients list
+            client_t *clients[MAX_CLIENTS];
+
             // Create master socket
             _socket = createSocket(AF_INET, SOCK_STREAM, 0);
 
-            //set master socket to allow multiple connections , 
-            //this is just a good habit, it will work without this 
-            multipleConnections();
-
+            signal( SIGPIPE, SIG_IGN ); // Ignore pipe signals ????
+            
+            multipleConnections(); // with same addrs AND port
             socketBind();
             socketListen();
 
-            int server = socketAccept();
+            cout << endl << "--------------WELLCOME TO CHATROOM---------------\n" << endl;  
+
+            int listenFileDescriptor = socketAccept(); // Chat p2p
+            // int listenFileDescriptor;
+            // while( true ) {
+            //     listenFileDescriptor = socketAccept();
+                
+            //     if( (clientCount+1) == MAX_CLIENTS ) {
+            //         cout << "Max clients reached. Rejected: ";
+            //         // Print client addrs and port?
+            //         close( listenFileDescriptor );
+            //         continue;
+            //     }
+
+            //     // Client set
+            //     client_t *client = (client_t *) malloc( sizeof(client_t) );
+            //     client->address = client;
+            //     client->sockfd = 
+            // }
 
             close(_socket);            
 
-            char buf[4096];
-            int bufsize = 4096;
+            char buf[BUFFER_SZ];
+            int bufsize = BUFFER_SZ;
             
-            cout << endl << "----------------CLIENT CONNECTED-----------------\n" << endl;
+            cout << "----------------CLIENT CONNECTED-----------------\n" << endl;
 
             while( true ) {
-                memset( buf, 0, 4096 );
-                send(server, buf, bufsize, 0);
+                memset( buf, 0, BUFFER_SZ );
+                send(listenFileDescriptor, buf, bufsize, 0);
 
                 while ( true ) {
                     //cout << "Waiting client message...";
                     cout << "Client: ";
                     do {
-                        recv(server, buf, bufsize, 0);
+                        recv(listenFileDescriptor, buf, bufsize, 0);
                         if (*buf != '$') cout << buf;
                     } while( *buf != '$');
 
                     cout << "\nServer: ";
-                    sendMessage(server, 4096);
+                    sendMessage(listenFileDescriptor, BUFFER_SZ);
                 }
             }
 
-            close(server);
+            close(listenFileDescriptor);
             return 0;
         }
 
@@ -104,15 +129,17 @@ class Socket {
         sockaddr_in hint;
         int _socket;
 
-        // /* Client structure */
-        // typedef struct{
-        //     struct sockaddr_in address;
-        //     int sockfd;
-        //     int uid;
-        //     char name[32];
-        // } client_t;
+        /* Server variables */
+        typedef struct{ // client struct
+            sockaddr_in address;
+            int sockfd;
+            int uid;
+            char name[32];
+        } client_t;
 
-        // client_t *clients[MAX_CLIENTS];
+        pthread_mutex_t clients_mutex; // server mutex
+
+        atomic<unsigned int> clientCount = atomic<unsigned int>(0); // static _Atomic unsigned int cli_count = 0;
 
         int sendMessage(int client, int max_message_size) {
             //max_message_size /= 2;
@@ -159,16 +186,19 @@ class Socket {
             return sock;
         }
 
-        sockaddr_in socketHandler( int __domain ) {
+        sockaddr_in socketHandler() {
             sockaddr_in hint;
             hint.sin_family = AF_INET;
             hint.sin_port = htons(port);
-            inet_pton(AF_INET, ipAddrs, &hint.sin_addr);
+            /* inet_pton(AF_INET, ipAddrs, &hint.sin_addr); DEPRECATED */
+            hint.sin_addr.s_addr = inet_addr(ipAddrs); // This accepts IPv6
             return hint;
         }
 
         int multipleConnections() {
-            int opt = true;
+            int opt = 1;
+            // ERROR: CAN'T BIND TO PORT
+            // if( setsockopt(_socket, SOL_SOCKET, (SO_REUSEPORT | SO_REUSEADDR), (char *)&opt, sizeof(opt)) < 0 ) 
             if( setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 )  
             {  
                 perror("setsockopt");  
@@ -188,27 +218,27 @@ class Socket {
 
         int socketAccept() {
             sockaddr_in client;
-            socklen_t clientSize;
-            char host[NI_MAXHOST];
-            char svc[NI_MAXSERV];
+            socklen_t clientSize = sizeof(sockaddr_in); // ??
+            
+            int listenFileDescriptor = accept(_socket, (sockaddr*)&client, &clientSize);
 
-            int server = accept(_socket, (sockaddr*)&client, &clientSize);
-            if( server == ERROR ) {
+            if( listenFileDescriptor == ERROR ) {
                 cout << "CONNECTION EXCEPTION: Client could not connect!";
                 return ERROR;
             }
+            
+            /* GET CLIENT NAME? -> NOT USED */
+            // char host[NI_MAXHOST];
+            // char svc[NI_MAXSERV];
+            // memset(host, 0, NI_MAXHOST);
+            // memset(svc, 0, NI_MAXSERV);
 
-            memset(host, 0, NI_MAXHOST);
-            memset(svc, 0, NI_MAXSERV);
+            // int result = getnameinfo((sockaddr*)&client, sizeof(client), host, NI_MAXHOST, svc, NI_MAXSERV, 0);
 
-            int result = getnameinfo((sockaddr*)&client, sizeof(client), host, NI_MAXHOST, svc, NI_MAXSERV, 0);
-
-            if( !result ) {
-                inet_ntop(AF_INET, &client.sin_addr, host, NI_MAXHOST);
-            }
-
-            return server;
-
+            // if( !result ) {
+            //     inet_ntop(AF_INET, &client.sin_addr, host, NI_MAXHOST);
+            // }
+            return listenFileDescriptor;
         }
 
         int socketBind() {

@@ -6,6 +6,7 @@
         "iosfwd": "cpp",
         "*.tcc": "cpp",
         "string_view": "cpp",
-        "functional": "cpp"
+        "functional": "cpp",
+        "atomic": "cpp"
     }
 }
