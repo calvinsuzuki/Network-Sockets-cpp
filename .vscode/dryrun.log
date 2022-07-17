@@ -1,6 +1,0 @@
-make --dry-run --keep-going --print-directory
-make: Entering directory '/home/guisoares/soares_repo/Network-Sockets-cpp'
-g++ -Wall -g  server.cpp -o Server -lm
-g++ -Wall -g  client.cpp -o Client -lm
-make: Leaving directory '/home/guisoares/soares_repo/Network-Sockets-cpp'
- 
