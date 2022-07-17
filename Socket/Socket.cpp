@@ -62,8 +62,7 @@ class Socket {
 
         int startServer() {
 
-            // Start clients list
-            client_t *clients[MAX_CLIENTS];
+            
 
             // Create master socket
             _socket = createSocket(AF_INET, SOCK_STREAM, 0);
@@ -76,49 +75,78 @@ class Socket {
 
             cout << endl << "--------------WELLCOME TO CHATROOM---------------\n" << endl;  
 
-            int listenFileDescriptor = socketAccept(); // Chat p2p
-            // int listenFileDescriptor;
-            // while( true ) {
-            //     listenFileDescriptor = socketAccept();
-                
-            //     if( (clientCount+1) == MAX_CLIENTS ) {
-            //         cout << "Max clients reached. Rejected: ";
-            //         // Print client addrs and port?
-            //         close( listenFileDescriptor );
-            //         continue;
-            //     }
-
-            //     // Client set
-            //     client_t *client = (client_t *) malloc( sizeof(client_t) );
-            //     client->address = client;
-            //     client->sockfd = 
-            // }
-
-            close(_socket);            
-
-            char buf[BUFFER_SZ];
-            int bufsize = BUFFER_SZ;
-            
-            cout << "----------------CLIENT CONNECTED-----------------\n" << endl;
-
+            // int listenFileDescriptor = socketAccept(); // Chat p2p
+            int listenFD;
+            sockaddr_in client_addrs;
             while( true ) {
-                memset( buf, 0, BUFFER_SZ );
-                send(listenFileDescriptor, buf, bufsize, 0);
+                socklen_t clientSize = sizeof(sockaddr_in); // ??
+            
+                listenFD = accept(_socket, (sockaddr*)&client_addrs, &clientSize);
 
-                while ( true ) {
-                    //cout << "Waiting client message...";
-                    cout << "Client: ";
-                    do {
-                        recv(listenFileDescriptor, buf, bufsize, 0);
-                        if (*buf != '$') cout << buf;
-                    } while( *buf != '$');
-
-                    cout << "\nServer: ";
-                    sendMessage(listenFileDescriptor, BUFFER_SZ);
+                if( listenFD == ERROR ) {
+                    cout << "CONNECTION EXCEPTION: Client could not connect!";
+                    return ERROR;
                 }
+
+                if( (clientCount+1) == MAX_CLIENTS ) {
+                    cout << "Max clients reached. Rejected: ";
+                    // Print client addrs and port?
+                    close( listenFD );
+                    continue;
+                }
+
+                // Client set
+                client_t *client = (client_t *) malloc( sizeof(client_t) );
+                client->address = client_addrs;
+                client->sockfd = listenFD;
+                client->uid = uid++;
+
+                // Add client to the queue and fork thread
+                // queue_add( client );
+                pthread_mutex_lock(&clients_mutex);
+                
+                // ***LOCKED ACTION***
+                for(int i=0; i < MAX_CLIENTS; ++i){
+                    if(clients[i]){
+                        if(clients[i]->uid == uid){
+                            clients[i] = NULL;
+                            break;
+                        }
+                    }
+                }
+    
+                pthread_mutex_unlock(&clients_mutex);
+                // 
+                // pthread_create( &tid, NULL, &handle_client, (void*)client); ERROR
+
+                sleep(1); // Reduce CPU usage ???
             }
 
-            close(listenFileDescriptor);
+            // close(_socket);            
+
+            // char buf[BUFFER_SZ];
+            // int bufsize = BUFFER_SZ;
+            
+            // cout << "----------------CLIENT CONNECTED-----------------\n" << endl;
+
+            // while( true ) {
+            //     memset( buf, 0, BUFFER_SZ );
+            //     send(listenFD, buf, bufsize, 0);
+
+            //     while ( true ) {
+            //         //cout << "Waiting client message...";
+            //         cout << "Client: ";
+            //         do {
+            //             recv(listenFD, buf, bufsize, 0);
+            //             if (*buf != '$') cout << buf;
+            //         } while( *buf != '$');
+
+            //         cout << "\nServer: ";
+            //         sendMessage(listenFD, BUFFER_SZ);
+            //     }
+            // }
+
+            // close(listenFD);
             return 0;
         }
 
@@ -128,6 +156,7 @@ class Socket {
         unsigned int port;
         sockaddr_in hint;
         int _socket;
+        int uid = 10;
 
         /* Server variables */
         typedef struct{ // client struct
@@ -138,8 +167,12 @@ class Socket {
         } client_t;
 
         pthread_mutex_t clients_mutex; // server mutex
+        pthread_t tid;
 
-        atomic<unsigned int> clientCount = atomic<unsigned int>(0); // static _Atomic unsigned int cli_count = 0;
+        // Start clients list
+        client_t *clients[MAX_CLIENTS];
+
+        atomic<unsigned int> clientCount{0}; // static _Atomic unsigned int cli_count = 0;
 
         int sendMessage(int client, int max_message_size) {
             //max_message_size /= 2;
@@ -216,31 +249,6 @@ class Socket {
             else return 0;
         }
 
-        int socketAccept() {
-            sockaddr_in client;
-            socklen_t clientSize = sizeof(sockaddr_in); // ??
-            
-            int listenFileDescriptor = accept(_socket, (sockaddr*)&client, &clientSize);
-
-            if( listenFileDescriptor == ERROR ) {
-                cout << "CONNECTION EXCEPTION: Client could not connect!";
-                return ERROR;
-            }
-            
-            /* GET CLIENT NAME? -> NOT USED */
-            // char host[NI_MAXHOST];
-            // char svc[NI_MAXSERV];
-            // memset(host, 0, NI_MAXHOST);
-            // memset(svc, 0, NI_MAXSERV);
-
-            // int result = getnameinfo((sockaddr*)&client, sizeof(client), host, NI_MAXHOST, svc, NI_MAXSERV, 0);
-
-            // if( !result ) {
-            //     inet_ntop(AF_INET, &client.sin_addr, host, NI_MAXHOST);
-            // }
-            return listenFileDescriptor;
-        }
-
         int socketBind() {
             if( bind(_socket, (sockaddr*)&hint, sizeof(hint)) == -1) {
                 cout << "BINDING EXCEPTION: Can't bind to IP/Port";
@@ -250,10 +258,103 @@ class Socket {
         }
 
         int socketListen() {
-        if( listen(_socket, SOMAXCONN) == -1 ) {
-                cout << "MASTER EXCEPTION: Can't listen";
-                return ERROR;
+            if( listen(_socket, SOMAXCONN) == -1 ) {
+                    cout << "MASTER EXCEPTION: Can't listen";
+                    return ERROR;
+            }
+            else return 0;
         }
-        else return 0;
-    }
+
+        /* Send message to all clients except sender */
+        void send_messages(char *s, int uid){
+            pthread_mutex_lock(&clients_mutex);
+
+            for(int i=0; i<MAX_CLIENTS; ++i){
+                if(clients[i]){
+                    if(clients[i]->uid != uid){
+                        if(write(clients[i]->sockfd, s, strlen(s)) < 0){
+                            perror("ERROR: write to descriptor failed");
+                            break;
+                        }
+                    }
+                }
+            }
+
+            pthread_mutex_unlock(&clients_mutex);
+        }
+
+        /* Remove clients to queue */
+        void queue_remove(int uid){
+            pthread_mutex_lock(&clients_mutex);
+
+            for(int i=0; i < MAX_CLIENTS; ++i){
+                if(clients[i]){
+                    if(clients[i]->uid == uid){
+                        clients[i] = NULL;
+                        break;
+                    }
+                }
+            }
+
+            pthread_mutex_unlock(&clients_mutex);
+        }
+
+        /* Handle all communication with the client */
+        void *handle_client(void *arg){
+            char buff_out[BUFFER_SZ];
+            char name[32];
+            int leave_flag = 0;
+
+            clientCount.fetch_add(1); //clientCount++;
+            client_t *cli = (client_t *)arg;
+
+            // Name
+            if(recv(cli->sockfd, name, 32, 0) <= 0 || strlen(name) <  2 || strlen(name) >= 32-1){
+                printf("Didn't enter the name.\n");
+                leave_flag = 1;
+            } else{
+                strcpy(cli->name, name);
+                sprintf(buff_out, "%s has joined\n", cli->name);
+                printf("%s", buff_out);
+                send_messages(buff_out, cli->uid);
+            }
+
+            bzero(buff_out, BUFFER_SZ);
+
+            while(1){
+                if (leave_flag) {
+                    break;
+                }
+
+                int receive = recv(cli->sockfd, buff_out, BUFFER_SZ, 0);
+                if (receive > 0){
+                    if(strlen(buff_out) > 0){
+                        send_messages(buff_out, cli->uid);
+
+                        // str_trim_lf(buff_out, strlen(buff_out)); // may not help
+                        printf("%s -> %s\n", buff_out, cli->name);
+                    }
+                } else if (receive == 0 || strcmp(buff_out, "exit") == 0){
+                    sprintf(buff_out, "%s has left\n", cli->name);
+                    printf("%s", buff_out);
+                    send_messages(buff_out, cli->uid);
+                    leave_flag = 1;
+                } else {
+                    printf("ERROR: -1\n");
+                    leave_flag = 1;
+                }
+
+                bzero(buff_out, BUFFER_SZ);
+            }
+
+            /* Delete client from queue and yield thread */
+            close(cli->sockfd);
+            queue_remove(cli->uid);
+            free(cli);
+            clientCount.fetch_sub(1); // clientCount--;
+            pthread_detach(pthread_self());
+
+            return NULL;
+        }
+
 };
