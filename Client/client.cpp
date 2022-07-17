@@ -6,5 +6,5 @@ using namespace std;
 
 int main() {   
     Socket client(54400, "127.168.0.115");
-    cout << client.startClient();
+    cout << endl << client.startClient();
 }

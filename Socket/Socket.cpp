@@ -7,37 +7,29 @@
 #include <string.h>
 #include <string>
 
+#include <netinet/in.h>
+#include <errno.h>
+#include <pthread.h>
+#include <signal.h>
+
 using namespace std;
 
 #define ERROR -1
 
 class Socket {
     public:
-        unsigned int port;
-        const char * ipAddrs;
         Socket(unsigned int _port, const char * _ipAddrs) {
             port = _port;
             ipAddrs = _ipAddrs;
+            hint = socketHandler( AF_INET );
         }
+        
         int startClient() {
-            //	Create a socket
-            int client = socket(AF_INET, SOCK_STREAM, 0);
-            if (client == -1) {
-                cout << "SOCKET EXCEPTION: Could not create!";
-                return ERROR;  
-            }  
-
-            sockaddr_in hint;
-            hint.sin_family = AF_INET;
-            hint.sin_port = htons(port);
-            inet_pton(AF_INET, ipAddrs, &hint.sin_addr);
+            //	Create client socket
+            _socket = createSocket(AF_INET, SOCK_STREAM, 0);
 
             //	Connect to the server on the socket
-            int connectRes = connect(client, (sockaddr*)&hint, sizeof(hint));
-            if (connectRes == -1) {
-                cout << "CONNECT EXCEPTION: Server not reachable!";
-                return ERROR;
-            }
+            socketConnect();
             
             // Control variables
             int bufsize = 4096;
@@ -45,101 +37,52 @@ class Socket {
             string str_buf;
             string userInput;
             
-            cout << endl;
-            cout << "------WELCOME TO SERVERLESS, YOUNG CLIENT--------" << endl;
-            cout << "-------------------------------------------------" << endl;
-            cout << "---Use the character '$' to finish the message---" << endl;
-            cout << endl;
+            cout << "----------------SERVER CONNECTED-----------------" << endl;
 
             //	While loop:
             while ( true ) {
                 cout << "\nClient: ";
-                sendMessage(client, 4096);
+                sendMessage(_socket, 4096);
+                //cout << "Waiting server message...";
 
-                cout << "Waiting server message...";
-
-                cout << "\nServer: ";
+                cout << "Server: ";
                 do {
-                    recv(client, buf, bufsize, 0);
+                    recv(_socket, buf, bufsize, 0);
                     if (*buf != '$') cout << buf;
                 } while( *buf != '$');
             }
 
-            close(client);
+            close(_socket);
             return 0;
         }
 
         int startServer() {
-            int opt = true;
-            int listening = socket(AF_INET, SOCK_STREAM, 0);
-            if (listening == -1) {
-                cout << "SOCKET EXCEPTION: Could not create!";
-                return ERROR;
-            }
+            // Create master socket
+            _socket = createSocket(AF_INET, SOCK_STREAM, 0);
 
             //set master socket to allow multiple connections , 
             //this is just a good habit, it will work without this 
-            if( setsockopt(listening, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 )  
-            {  
-                perror("setsockopt");  
-                return ERROR;
-            } 
-            
-            sockaddr_in hint;
-            hint.sin_family = AF_INET;
-            hint.sin_port = htons(port);
-            inet_pton(AF_INET, ipAddrs, &hint.sin_addr);
+            multipleConnections();
 
-            if( bind(listening, (sockaddr*)&hint, sizeof(hint)) == -1) {
-                cout << "BINDING EXCEPTION: Can't bind to IP/Port";
-                return ERROR;
-            }
+            socketBind();
+            socketListen();
 
-            if( listen(listening, SOMAXCONN) == -1 ) {
-                cout << "LISTENING EXCEPTION: Can't listen";
-                return ERROR;
-            }
+            int server = socketAccept();
 
-            sockaddr_in client;
-            socklen_t clientSize;
-            char host[NI_MAXHOST];
-            char svc[NI_MAXSERV];
-
-            int server = accept(listening, (sockaddr*)&client, &clientSize);
-
-            if( server == -1) {
-                cout << "CONNECTION EXCEPTION: Client could not connect!";
-                return ERROR;
-            }
-
-            close(listening);
-
-            memset(host, 0, NI_MAXHOST);
-            memset(svc, 0, NI_MAXSERV);
-
-            int result = getnameinfo((sockaddr*)&client, sizeof(client), host, NI_MAXHOST, svc, NI_MAXSERV, 0);
-
-            if( !result ) {
-                inet_ntop(AF_INET, &client.sin_addr, host, NI_MAXHOST);
-            }
+            close(_socket);            
 
             char buf[4096];
             int bufsize = 4096;
             
-            cout << endl;
-            cout << "--------WELCOME TO THE SERVERLESS SERVER---------" << endl;
-            cout << "-------------------------------------------------" << endl;
-            cout << "---Use the character '$' to finish the message---" << endl;
-            cout << endl;
+            cout << endl << "----------------CLIENT CONNECTED-----------------\n" << endl;
 
             while( true ) {
                 memset( buf, 0, 4096 );
                 send(server, buf, bufsize, 0);
-                cout << "=> Enter '$' at the end of the message" << endl;
 
                 while ( true ) {
-                    cout << "Waiting client message...";
-                    cout << "\nClient: ";
+                    //cout << "Waiting client message...";
+                    cout << "Client: ";
                     do {
                         recv(server, buf, bufsize, 0);
                         if (*buf != '$') cout << buf;
@@ -156,39 +99,131 @@ class Socket {
 
     protected:
     private:
-    int sendMessage(int client, int max_message_size) {
-        //max_message_size /= 2;
-        string plain_text, frag_text;
-        // Read the string
-        getline(cin, plain_text);
+        const char *ipAddrs;
+        unsigned int port;
+        sockaddr_in hint;
+        int _socket;
 
-        int toSend = (int) plain_text.length();
+        // /* Client structure */
+        // typedef struct{
+        //     struct sockaddr_in address;
+        //     int sockfd;
+        //     int uid;
+        //     char name[32];
+        // } client_t;
 
-        while( toSend > 0) {      
-            // Fragments the message
-            if (toSend >= max_message_size) {
-                frag_text = plain_text.substr(0, max_message_size);
-                plain_text = plain_text.substr(max_message_size, plain_text.length());
-                // Send message
-            } 
-            // When the message is already small enought
-            else {
-                frag_text = plain_text;
+        // client_t *clients[MAX_CLIENTS];
+
+        int sendMessage(int client, int max_message_size) {
+            //max_message_size /= 2;
+            string plain_text, frag_text;
+            // Read the string
+            getline(cin, plain_text);
+
+            int toSend = (int) plain_text.length();
+
+            while( toSend > 0) {      
+                // Fragments the message
+                if (toSend >= max_message_size) {
+                    frag_text = plain_text.substr(0, max_message_size);
+                    plain_text = plain_text.substr(max_message_size, plain_text.length());
+                    // Send message
+                } 
+                // When the message is already small enought
+                else {
+                    frag_text = plain_text;
+                }
+
+                // Transform to array of char
+                char message[frag_text.length()];
+                strcpy( message, frag_text.c_str() );
+
+                //Send message
+                //cout << message;
+                send(client, message, max_message_size, 0);
+
+                //Subtracts the toSend variable
+                toSend -= frag_text.length();   
             }
 
-            // Transform to array of char
-            char message[frag_text.length()];
-            strcpy( message, frag_text.c_str() );
-
-            //Send message
-            //cout << message;
-            send(client, message, max_message_size, 0);
-
-            //Subtracts the toSend variable
-            toSend -= frag_text.length();   
+            send(client, "$", max_message_size, 0);
+            return 0;
+        }
+        
+        int createSocket(int __domain, int __type, int __protocol) {
+            int sock = socket(__domain, __type, __protocol);
+            if (sock == -1) {
+                cout << "SOCKET EXCEPTION: Could not create!";
+                return ERROR;
+            }
+            return sock;
         }
 
-        send(client, "$", max_message_size, 0);
-        return 0;
+        sockaddr_in socketHandler( int __domain ) {
+            sockaddr_in hint;
+            hint.sin_family = AF_INET;
+            hint.sin_port = htons(port);
+            inet_pton(AF_INET, ipAddrs, &hint.sin_addr);
+            return hint;
+        }
+
+        int multipleConnections() {
+            int opt = true;
+            if( setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 )  
+            {  
+                perror("setsockopt");  
+                return ERROR;
+            }
+            return 0;
+        }
+
+        int socketConnect() {
+            int connectRes = connect(_socket, (sockaddr*)&hint, sizeof(hint));
+            if (connectRes == -1) {
+                cout << "CONNECT EXCEPTION: Server not reachable!";
+                return ERROR;
+            }
+            else return 0;
+        }
+
+        int socketAccept() {
+            sockaddr_in client;
+            socklen_t clientSize;
+            char host[NI_MAXHOST];
+            char svc[NI_MAXSERV];
+
+            int server = accept(_socket, (sockaddr*)&client, &clientSize);
+            if( server == ERROR ) {
+                cout << "CONNECTION EXCEPTION: Client could not connect!";
+                return ERROR;
+            }
+
+            memset(host, 0, NI_MAXHOST);
+            memset(svc, 0, NI_MAXSERV);
+
+            int result = getnameinfo((sockaddr*)&client, sizeof(client), host, NI_MAXHOST, svc, NI_MAXSERV, 0);
+
+            if( !result ) {
+                inet_ntop(AF_INET, &client.sin_addr, host, NI_MAXHOST);
+            }
+
+            return server;
+
+        }
+
+        int socketBind() {
+            if( bind(_socket, (sockaddr*)&hint, sizeof(hint)) == -1) {
+                cout << "BINDING EXCEPTION: Can't bind to IP/Port";
+                return ERROR;
+            }
+            else return 0;
+        }
+
+        int socketListen() {
+        if( listen(_socket, SOMAXCONN) == -1 ) {
+                cout << "MASTER EXCEPTION: Can't listen";
+                return ERROR;
+        }
+        else return 0;
     }
 };
