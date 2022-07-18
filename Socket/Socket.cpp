@@ -7,9 +7,6 @@
 #include <string.h>
 #include <string>
 
-#include <netinet/in.h>
-#include <errno.h>
-#include <pthread.h>
 #include <signal.h>
 #include <atomic>
 

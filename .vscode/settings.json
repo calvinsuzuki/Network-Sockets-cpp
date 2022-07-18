@@ -17,7 +17,9 @@
         "type_traits": "c",
         "utility": "c",
         "ratio": "c",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "system_error": "cpp",
+        "iostream": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

@@ -1,8 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <atomic>
-
 #include "../Socket/Client.cpp"
 
 using namespace std;
@@ -10,14 +5,18 @@ using namespace std;
 #define ERROR -1
 #define LENGTH 4096
 
-char* askName() {
-    char name[32];
+string askName() {
+    string name;
 
     printf("Please enter your name: ");
-    fgets(name, 32, stdin);
+    getline(cin, name);
+
+    // // Transform to array of char
+    // char name_char[name.length()];
+    // strcpy( name_char, name.c_str() );
     // str_trim_lf(name, strlen(name));
 
-    if (strlen(name) > 32 || strlen(name) < 2) {
+    if (name.length() > 32 || name.length() < 2) {
         printf("Name must be less than 30 and more than 2 characters.\n");
         return "";
     }
@@ -25,15 +24,14 @@ char* askName() {
 }
 
 int main() {
-    int sockfd = 0;
-    char name[32];  
+    string name;  
 
     // Handle Cntrl^C
     signal(SIGINT, catch_ctrl_c_and_exit);
 
-	askName();
+	name = askName();
 	
-    Client client(name, 54400, "127.168.0.115");
+    Client client(name.c_str(), 54400, "127.0.0.1");
     
     client.startClient();
 }
