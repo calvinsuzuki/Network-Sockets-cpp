@@ -1,17 +1,48 @@
 #include <iostream>
-#include <sys/types.h>
 #include <unistd.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <string.h>
-#include <string>
+#include <mutex>
+#include <thread>
+#include <atomic>
 
 using namespace std;
 
-#define max_message_size 5
+mutex m;
+int x = 0 ;
+atomic<int> y = atomic<int>(0);
+// atomic<int> y{0};
+
+int func(int a) {
+
+    m.lock();
+    // sleep(1);
+    x += a;
+    y += a;
+    cout << "Thread: " << x << endl;
+    m.unlock();
+
+    return 0;
+}
 
 int main() {
+
+    int num = 1;
+
+    
+
+    thread tr1( func, num );
+    thread tr2( func, num );
+    tr1.detach();
+    tr2.detach();
+    
+    sleep(1);
+    cout << "Main: " << x << endl;
+    return 0;
+}
+
+
+// MESSAGE FRAGMENTATION LOGIC (WORKING IN THEORY)
+
+/* int main() {
     string plain_text, frag_text;
     // Read the string
     getline(cin, plain_text);
@@ -42,4 +73,4 @@ int main() {
     }
 
     return 0;
-}
+} */
