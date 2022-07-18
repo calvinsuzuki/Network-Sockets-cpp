@@ -46,18 +46,6 @@ class Socket {
             
             cout << "----------------SERVER CONNECTED-----------------" << endl;
 
-            //	While loop:
-            while ( true ) {
-                cout << "\nClient: ";
-                sendMessage(_socket, BUFFER_SZ);
-                //cout << "Waiting server message...";
-
-                cout << "Server: ";
-                do {
-                    recv(_socket, buf, bufsize, 0);
-                    if (*buf != '$') cout << buf;
-                } while( *buf != '$');
-            }
 
             close(_socket);
             return 0;
