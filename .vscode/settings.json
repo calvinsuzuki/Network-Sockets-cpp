@@ -1,5 +1,5 @@
 {
-    "workbench.colorTheme": "Default Dark+",
+    "workbench.colorTheme": "Abyss",
     "files.associations": {
         "ostream": "cpp",
         "array": "c",
@@ -16,7 +16,8 @@
         "tuple": "c",
         "type_traits": "c",
         "utility": "c",
-        "ratio": "c"
+        "ratio": "c",
+        "typeinfo": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }
