@@ -9,16 +9,124 @@
 
 #include <netinet/in.h>
 #include <errno.h>
-#include <thread>
 #include <pthread.h>
 #include <signal.h>
 #include <atomic>
+
+#include <thread>
+#include <mutex>
+
 
 using namespace std;
 
 #define ERROR -1
 #define BUFFER_SZ 4096
 #define MAX_CLIENTS 10
+
+atomic<unsigned int> clientCount{0};
+mutex m;
+
+/* Server variables */
+typedef struct{ // client struct
+    sockaddr_in address;
+    int sockfd;
+    int uid;
+    char nick[32];
+} client_t;
+
+// Start clients list
+client_t *clients[MAX_CLIENTS];
+
+/* Send message to all clients except sender */
+void sendToAll(char *s, int uid){
+    m.lock();
+
+    // ***LOCKED ACTION***
+    for(int i=0; i<MAX_CLIENTS; ++i){
+        if(clients[i]){
+            if(clients[i]->uid != uid) { 
+                // All but the sender
+                if(write(clients[i]->sockfd, s, strlen(s)) < 0){
+                    cout << "ERROR: write to descriptor failed" << endl;
+                    break;
+                }
+            }
+        }
+    }
+    
+    m.unlock();
+}
+
+/* Remove clients to queue */
+void queue_remove(int uid){
+    m.lock();
+
+    // ***LOCKED ACTION***
+    for(int i=0; i < MAX_CLIENTS; ++i){
+        if(clients[i]){
+            if(clients[i]->uid == uid){
+                clients[i] = NULL;
+                break;
+            }
+        }
+    }
+
+    m.unlock();
+}
+
+/* Handle all communication with the client */
+void handle_client(client_t *currentClient) {
+    char outputBuffer[BUFFER_SZ];
+    char nick[32];
+    bool leave_flag = false;
+    
+    cout << "DEBUG" << endl;
+
+    clientCount.fetch_add(1); // Increments the atomic counter
+    
+    // Nickname
+    if( recv(currentClient->sockfd, nick, 32, 0) <= 0 || strlen(nick) < 2 || strlen(nick) >= 31 ) {
+        cout << "Didn't enter the name.\n";
+    }   else {
+        strcpy( currentClient->nick, nick );
+
+        sprintf( outputBuffer, "**%s has joined**", nick); // outputBuffer = {NICK} has joined!
+        cout << outputBuffer << endl;
+        
+        sendToAll( outputBuffer, currentClient->uid );
+    }
+
+    memset(outputBuffer, 0, BUFFER_SZ); // Clears buffer
+
+    while( !leave_flag ) {
+
+        int receive = recv( currentClient->sockfd, outputBuffer, BUFFER_SZ, 0);
+        if ( receive > 0 ) {
+            if ( strlen(outputBuffer) > 0 ) {
+                sendToAll( outputBuffer, currentClient->uid );
+                cout << outputBuffer << endl;
+            }
+        } else if( receive == 0 || strcmp(outputBuffer, "exit") == 0) {
+            sprintf( outputBuffer, "%s has left!", currentClient->nick);
+            printf( "%s", outputBuffer );
+            sendToAll( outputBuffer, currentClient->uid );
+            leave_flag = true;
+        } else {
+            cout << "ERROR IN RECEIVE MESSAGE" << endl;
+            leave_flag = true;
+        }
+
+        memset(outputBuffer, 0, BUFFER_SZ); // Clears buffer
+    }
+
+    close( currentClient->sockfd );
+    queue_remove( currentClient->uid );
+    free( currentClient );
+    currentClient = NULL;
+    clientCount.fetch_sub(1);// Decrements the atomic counter
+    
+    return;
+}
 
 class Socket {
     public:
@@ -48,9 +156,7 @@ class Socket {
             return 0;
         }
 
-        int startServer() {
-
-            
+        int startServer() {            
 
             // Create master socket
             _socket = createSocket(AF_INET, SOCK_STREAM, 0);
@@ -91,8 +197,8 @@ class Socket {
 
                 // Add client to the queue and fork thread
                 // queue_add( client );
-                pthread_mutex_lock(&clients_mutex);
-                
+                m.lock();
+
                 // ***LOCKED ACTION***
                 for(int i=0; i < MAX_CLIENTS; ++i){
                     if(clients[i]){
@@ -103,38 +209,13 @@ class Socket {
                     }
                 }
     
-                pthread_mutex_unlock(&clients_mutex);
-                // 
+                m.unlock();
                 // pthread_create( &tid, NULL, &handle_client, (void*)client); ERROR
+                thread serverThread( handle_client, client );
+                serverThread.detach();                
 
                 sleep(1); // Reduce CPU usage ???
             }
-
-            // close(_socket);            
-
-            // char buf[BUFFER_SZ];
-            // int bufsize = BUFFER_SZ;
-            
-            // cout << "----------------CLIENT CONNECTED-----------------\n" << endl;
-
-            // while( true ) {
-            //     memset( buf, 0, BUFFER_SZ );
-            //     send(listenFD, buf, bufsize, 0);
-
-            //     while ( true ) {
-            //         //cout << "Waiting client message...";
-            //         cout << "Client: ";
-            //         do {
-            //             recv(listenFD, buf, bufsize, 0);
-            //             if (*buf != '$') cout << buf;
-            //         } while( *buf != '$');
-
-            //         cout << "\nServer: ";
-            //         sendMessage(listenFD, BUFFER_SZ);
-            //     }
-            // }
-
-            // close(listenFD);
             return 0;
         }
 
@@ -145,37 +226,24 @@ class Socket {
         sockaddr_in hint;
         int _socket;
         int uid = 10;
+        
 
-        /* Server variables */
-        typedef struct{ // client struct
-            sockaddr_in address;
-            int sockfd;
-            int uid;
-            char name[32];
-        } client_t;
+        
 
-        pthread_mutex_t clients_mutex; // server mutex
-        pthread_t tid;
-
-        // Start clients list
-        client_t *clients[MAX_CLIENTS];
-
-        atomic<unsigned int> clientCount{0}; // static _Atomic unsigned int cli_count = 0;
+        
 
         int sendMessage(int client, int max_message_size) {
-            //max_message_size /= 2;
             string plain_text, frag_text;
             // Read the string
             getline(cin, plain_text);
 
             int toSend = (int) plain_text.length();
 
-            while( toSend > 0) {      
+            while( toSend > 0 ) {      
                 // Fragments the message
                 if (toSend >= max_message_size) {
                     frag_text = plain_text.substr(0, max_message_size);
                     plain_text = plain_text.substr(max_message_size, plain_text.length());
-                    // Send message
                 } 
                 // When the message is already small enought
                 else {
@@ -219,8 +287,8 @@ class Socket {
         int multipleConnections() {
             int opt = 1;
             // ERROR: CAN'T BIND TO PORT
-            // if( setsockopt(_socket, SOL_SOCKET, (SO_REUSEPORT | SO_REUSEADDR), (char *)&opt, sizeof(opt)) < 0 ) 
-            if( setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 )  
+            // if( setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 )  
+            if( setsockopt(_socket, SOL_SOCKET, (SO_REUSEPORT | SO_REUSEADDR), (char *)&opt, sizeof(opt)) < 0 ) 
             {  
                 perror("setsockopt");  
                 return ERROR;
@@ -253,96 +321,5 @@ class Socket {
             else return 0;
         }
 
-        /* Send message to all clients except sender */
-        void send_messages(char *s, int uid){
-            pthread_mutex_lock(&clients_mutex);
-
-            for(int i=0; i<MAX_CLIENTS; ++i){
-                if(clients[i]){
-                    if(clients[i]->uid != uid){
-                        if(write(clients[i]->sockfd, s, strlen(s)) < 0){
-                            perror("ERROR: write to descriptor failed");
-                            break;
-                        }
-                    }
-                }
-            }
-
-            pthread_mutex_unlock(&clients_mutex);
-        }
-
-        /* Remove clients to queue */
-        void queue_remove(int uid){
-            pthread_mutex_lock(&clients_mutex);
-
-            for(int i=0; i < MAX_CLIENTS; ++i){
-                if(clients[i]){
-                    if(clients[i]->uid == uid){
-                        clients[i] = NULL;
-                        break;
-                    }
-                }
-            }
-
-            pthread_mutex_unlock(&clients_mutex);
-        }
-
-        /* Handle all communication with the client */
-        void *handle_client(void *arg){
-            char buff_out[BUFFER_SZ];
-            char name[32];
-            int leave_flag = 0;
-
-            clientCount.fetch_add(1); //clientCount++;
-            client_t *cli = (client_t *)arg;
-
-            // Name
-            if(recv(cli->sockfd, name, 32, 0) <= 0 || strlen(name) <  2 || strlen(name) >= 32-1){
-                printf("Didn't enter the name.\n");
-                leave_flag = 1;
-            } else{
-                strcpy(cli->name, name);
-                sprintf(buff_out, "%s has joined\n", cli->name);
-                printf("%s", buff_out);
-                send_messages(buff_out, cli->uid);
-            }
-
-            bzero(buff_out, BUFFER_SZ);
-
-            while(1){
-                if (leave_flag) {
-                    break;
-                }
-
-                int receive = recv(cli->sockfd, buff_out, BUFFER_SZ, 0);
-                if (receive > 0){
-                    if(strlen(buff_out) > 0){
-                        send_messages(buff_out, cli->uid);
-
-                        // str_trim_lf(buff_out, strlen(buff_out)); // may not help
-                        printf("%s -> %s\n", buff_out, cli->name);
-                    }
-                } else if (receive == 0 || strcmp(buff_out, "exit") == 0){
-                    sprintf(buff_out, "%s has left\n", cli->name);
-                    printf("%s", buff_out);
-                    send_messages(buff_out, cli->uid);
-                    leave_flag = 1;
-                } else {
-                    printf("ERROR: -1\n");
-                    leave_flag = 1;
-                }
-
-                bzero(buff_out, BUFFER_SZ);
-            }
-
-            /* Delete client from queue and yield thread */
-            close(cli->sockfd);
-            queue_remove(cli->uid);
-            free(cli);
-            clientCount.fetch_sub(1); // clientCount--;
-            pthread_detach(pthread_self());
-
-            return NULL;
-        }
 
 };
