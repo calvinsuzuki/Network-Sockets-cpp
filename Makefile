@@ -13,7 +13,7 @@ make_server:
 	g++ -pthread -Wall -g $(UTIL) $(SERVER) -o $(BIN_SERVER) -lm
 
 make_client:
-	g++ -Wall -g $(UTIL) $(CLIENT) -o $(BIN_CLIENT) -lm
+	g++ -std=c++11 -Wall -g $(UTIL) $(CLIENT) -o $(BIN_CLIENT) -lm
 
 run_server:
 	./$(BIN_SERVER)

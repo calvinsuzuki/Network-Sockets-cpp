@@ -22,7 +22,7 @@ int main() {
         // Fragments the message
         if (toSend >= max_message_size) {
             frag_text = plain_text.substr(0, max_message_size);
-            plain_text = plain_text.substr(max_message_size, plain_text.length());
+            // plain_text = plain_text.substr(0, BUFFER_SZ-5);
             // Send message
         } 
         // When the message is already small enought
