@@ -6,14 +6,14 @@ BIN_CLIENT=./Client/client.bin
 ZIP=ProjetoFinal
 
 all:
-	g++ -Wall -g $(UTIL) $(SERVER) -o $(BIN_SERVER) -lm
-	g++ -Wall -g $(UTIL) $(CLIENT) -o $(BIN_CLIENT) -lm
+	g++ -Wall -g $(UTIL) $(SERVER) -o $(BIN_SERVER) -lm -pthread
+	g++ -Wall -g $(UTIL) $(CLIENT) -o $(BIN_CLIENT) -lm -pthread
 
 make_server:
-	g++ -Wall -g $(UTIL) $(SERVER) -o $(BIN_SERVER) -lm
+	g++ -Wall -g $(UTIL) $(SERVER) -o $(BIN_SERVER) -lm -pthread
 
 make_client:
-	g++ -Wall -g $(UTIL) $(CLIENT) -o $(BIN_CLIENT) -lm
+	g++ -std=c++11 -Wall -g $(UTIL) $(CLIENT) -o $(BIN_CLIENT) -lm -pthread
 
 run_server:
 	./$(BIN_SERVER)
