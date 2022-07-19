@@ -8,10 +8,7 @@
 #include <string>
 #include <vector>
 
-<<<<<<< HEAD
 #include <netinet/in.h>
-=======
->>>>>>> 2ed6ead3a52e7b65010e46d4b72f3fcc6dfa26cb
 #include <signal.h>
 #include <atomic>
 
@@ -24,23 +21,23 @@ using namespace std;
 #define BUFFER_SZ 4096
 #define MAX_CLIENTS 3
 
+// Global variables
 atomic<unsigned int> clientCount{0};
 mutex m;
-int uid = 0;
+int uid = 0; // Starting USER ID 
 
 /* Server variables */
 typedef struct{ // client struct
     sockaddr_in address;
     int sockfd;
     int uid;
-    char nick[32];
+    char nick[50];
 } client_t;
 
-// Start clients list
 client_t *clients[MAX_CLIENTS];
 
 /* Send message to all clients except sender */
-void sendToAll(char *s, int uid) {
+void sendToAll(const char *s, int uid) {
     
     m.lock();
     // ***LOCKED ACTION***
@@ -61,14 +58,15 @@ void sendToAll(char *s, int uid) {
 /* Handle all communication with the client */
 void handle_client(client_t *currentClient) {
     char sendBuff[BUFFER_SZ];
+    string aux = "";
     char nickBuff[32];
     bool leave_flag = false;
 
     clientCount.fetch_add(1); // Increments the atomic counter
-    cout << "Clients Online: " << clientCount.load() << " -> ";
+    cout << "Clients Online: " << clientCount.load() << endl;
     
     // Receive the nickname
-    recv(currentClient->sockfd, nickBuff, 32, 0);
+    recv(currentClient->sockfd, nickBuff, 50, 0);
 
     // Join anouncement
     if( strlen(nickBuff) < 2 || strlen(nickBuff)-1 > 32 ) {
@@ -77,9 +75,9 @@ void handle_client(client_t *currentClient) {
     else {
         strcpy( currentClient->nick, nickBuff );
 
-        sprintf( sendBuff, "**%s has joined**\n", nickBuff); // sendBuff = {NICK} has joined!
-        cout << nickBuff << " ( uid=" << currentClient->uid << " )" << endl;        
-        sendToAll( sendBuff, currentClient->uid );
+        sprintf( sendBuff, "** %s has joined **", nickBuff); // sendBuff = {NICK} has joined!
+        cout << nickBuff << " ( uid = " << currentClient->uid << " )" << endl;        
+        sendToAll( sendBuff, -1 );
     }
 
     memset(sendBuff, 0, BUFFER_SZ); // Clears buffer
@@ -87,14 +85,26 @@ void handle_client(client_t *currentClient) {
     while( !leave_flag ) {        
         int receive = recv( currentClient->sockfd, sendBuff, BUFFER_SZ, 0);
         if ( receive > 0 ) {
-            if ( strlen(sendBuff) > 0 ) {
-                sendToAll( sendBuff, currentClient->uid );
-                cout << sendBuff << endl;
+            if ( strlen(sendBuff) > 0 && strcmp(sendBuff, "/quit") != 0 ) {
+
+                if ( strcmp( sendBuff, "/ping") == 0 ) {
+                    aux = "pong";
+                    write(currentClient->sockfd, aux.c_str(), aux.length() );
+                    continue;
+                }
+                // Send message to all
+                aux = currentClient->nick;
+                aux.append( ": " );
+                aux.append( sendBuff );
+                sendToAll( aux.c_str(), currentClient->uid );
+                cout << aux << endl;
             }
-        } else if( receive == 0 || strcmp(sendBuff, "exit") == 0) {
-            sprintf( sendBuff, "%s has left!\n", currentClient->nick);
-            printf( "%s", sendBuff );
-            sendToAll( sendBuff, currentClient->uid );
+        } 
+        /* Left anouncement */
+        else if( receive == 0 || strcmp(sendBuff, "/quit") == 0 ) {
+            sprintf( sendBuff, "** %s has left! **", currentClient->nick);
+            sendToAll( sendBuff, -1 );
+            cout << sendBuff << endl;
             leave_flag = true;
         } else {
             cout << "ERROR IN RECEIVE MESSAGE" << endl;
@@ -121,6 +131,7 @@ void handle_client(client_t *currentClient) {
     currentClient = NULL;
     clientCount.fetch_sub(1);// Decrements the atomic counter
     
+    cout << "Clients Online: " << clientCount.load() << endl;
     return;
 }
 
@@ -133,19 +144,17 @@ class Socket {
         }
 
         int startServer() {            
-
             // Create master socket
             _socket = createSocket(AF_INET, SOCK_STREAM, 0);
 
             signal( SIGPIPE, SIG_IGN ); // Ignore pipe signals ????
-            
+
             multipleConnections(); // with same addrs AND port
             socketBind();
             socketListen();
 
             cout << endl << "--------------WELLCOME TO CHATROOM---------------\n" << endl;  
 
-            // int listenFileDescriptor = socketAccept(); // Chat p2p
             int listenFD;
             sockaddr_in client_addrs;
             while( true ) {

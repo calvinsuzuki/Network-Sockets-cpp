@@ -2,36 +2,39 @@
 
 using namespace std;
 
-#define ERROR -1
-#define LENGTH 4096
-
 string askName() {
     string name;
 
-    printf("Please enter your name: ");
-    getline(cin, name);
+    while ( true ) {
 
-    // // Transform to array of char
-    // char name_char[name.length()];
-    // strcpy( name_char, name.c_str() );
-    // str_trim_lf(name, strlen(name));
+        printf("Please enter your name: ");
 
-    if (name.length() > 32 || name.length() < 2) {
-        printf("Name must be less than 30 and more than 2 characters.\n");
-        return "";
+        getline( cin, name );
+
+        if (name.length()-1 > 50 || name.length() <= 2) {
+            printf("Name must be less than 50 and more than 2 characters.\n");
+            continue;
+        }
+
+        return name;
     }
-    return name;
 }
 
 int main() {
-    string name;  
+    // string name, line, ip;  
+    // int port;
 
-    // Handle Cntrl^C
-    signal(SIGINT, catch_ctrl_c_and_exit);
+    // do {
+    //     cin >> line;
+    // } while( line != "/connect" );
+    
+    // cin >> ip;
+    // cin >> port;
 
-	name = askName();
+    string name;
+    name = askName();
 	
-    Client client(name.c_str(), 54400, "127.0.0.1");
+    Client client(name.c_str(), 53400, "127.0.0.1");
     
     client.startClient();
 }
