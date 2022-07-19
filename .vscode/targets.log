@@ -6,7 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Mon Jul 18 13:25:05 2022
+# Make data base, printed on Mon Jul 18 21:36:52 2022
 
 # Variables
 
@@ -41,7 +41,7 @@ GTK3_MODULES = xapp-gtk3-module
 # environment
 SNAP_INSTANCE_NAME = code
 # environment
-GDK_PIXBUF_MODULEDIR = /snap/code/101/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders
+GDK_PIXBUF_MODULEDIR = /snap/code/102/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders
 # environment
 VSCODE_HANDLES_UNCAUGHT_ERRORS = true
 # default
@@ -59,7 +59,7 @@ XDG_DATA_DIRS = /home/calvin/.local/share/flatpak/exports/share:/var/lib/flatpak
 # automatic
 %F = $(notdir $%)
 # environment
-VSCODE_CODE_CACHE_PATH = /home/calvin/.config/Code/CachedData/b06ae3b2d2dbfe28bca3134cc6be65935cdfea6a
+VSCODE_CODE_CACHE_PATH = /home/calvin/.config/Code/CachedData/3b889b090b5ad5793f524b5d1d39fda662b96a2a
 # environment
 XDG_SESSION_PATH = /org/freedesktop/DisplayManager/Session0
 # environment
@@ -75,7 +75,7 @@ MAKEFLAGS = pqrR
 # makefile
 CURDIR := /home/calvin/Documents/Network-Sockets-cpp
 # environment
-APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = true
 # automatic
 *D = $(patsubst %/,%,$(dir $*))
 # environment
@@ -101,7 +101,7 @@ SNAP_REEXEC =
 # automatic
 @F = $(notdir $@)
 # environment
-VSCODE_PID = 13043
+VSCODE_PID = 1371
 # environment
 XDG_SESSION_TYPE = x11
 # automatic
@@ -109,7 +109,7 @@ XDG_SESSION_TYPE = x11
 # environment
 BAMF_DESKTOP_FILE_HINT = /var/lib/snapd/desktop/applications/code_code.desktop
 # environment
-SESSION_MANAGER = local/alessa:@/tmp/.ICE-unix/719,unix/alessa:/tmp/.ICE-unix/719
+SESSION_MANAGER = local/alessa:@/tmp/.ICE-unix/735,unix/alessa:/tmp/.ICE-unix/735
 # automatic
 *F = $(notdir $*)
 # environment
@@ -153,9 +153,9 @@ SNAP_USER_COMMON = /home/calvin/snap/code/common
 # environment
 LC_TIME = pt_BR.UTF-8
 # environment
-SNAP = /snap/code/101
+SNAP = /snap/code/102
 # environment
-SNAP_REVISION = 101
+SNAP_REVISION = 102
 # environment
 SNAP_REAL_HOME = /home/calvin
 # makefile (from 'Makefile', line 2)
@@ -191,7 +191,7 @@ XDG_VTNR = 1
 # makefile
 .DEFAULT_GOAL := all
 # environment
-SYSTEMD_EXEC_PID = 625
+SYSTEMD_EXEC_PID = 641
 # environment
 DISPLAY = :0
 # environment
@@ -205,7 +205,7 @@ KDE_SESSION_UID = 1000
 # environment
 DISABLE_WAYLAND = 1
 # environment
-SNAP_DATA = /var/snap/code/101
+SNAP_DATA = /var/snap/code/102
 # environment
 SNAP_CONTEXT = k5zA116-fzKVPUISLk9qtPzOuYm4j4vsj8n7REKO7sjz93vsH-LS
 # makefile (from 'Makefile', line 6)
@@ -233,11 +233,11 @@ BIN_SERVER = ./Server/server.bin
 # environment
 ELECTRON_RUN_AS_NODE = 1
 # environment
-VSCODE_IPC_HOOK = /run/user/1000/vscode-f1a4396d-1.69.1-main.sock
+VSCODE_IPC_HOOK = /run/user/1000/vscode-f1a4396d-1.69.2-main.sock
 # environment
 SNAP_NAME = code
 # environment
-GSETTINGS_SCHEMA_DIR = /snap/code/101/usr/share/glib-2.0/schemas
+GSETTINGS_SCHEMA_DIR = /snap/code/102/usr/share/glib-2.0/schemas
 # environment
 XDG_SESSION_ID = 1
 # environment
@@ -247,7 +247,7 @@ XCURSOR_SIZE = 24
 # automatic
 <F = $(notdir $<)
 # environment
-SNAP_VERSION = b06ae3b2
+SNAP_VERSION = 3b889b09
 # default
 SUFFIXES := 
 # environment
@@ -265,7 +265,7 @@ KDE_SESSION_VERSION = 5
 # environment
 KDE_FULL_SESSION = true
 # environment
-SNAP_USER_DATA = /home/calvin/snap/code/101
+SNAP_USER_DATA = /home/calvin/snap/code/102
 # environment
 LC_IDENTIFICATION = pt_BR.UTF-8
 # environment
@@ -279,6 +279,7 @@ SNAP_LIBRARY_PATH = /var/lib/snapd/lib/gl:/var/lib/snapd/lib/gl32:/var/lib/snapd
 
 # Directories
 
+ 
 # . (device 2066, inode 931457): 15 files, no impossibilities.
 
 # 15 files, no impossibilities in 1 directories.
@@ -440,6 +441,6 @@ sv: clear make_server run_server
 # strcache performance: lookups = 59 / hit rate = 44%
 # hash-table stats:
 # Load=33/8192=0%, Rehash=0, Collisions=0/59=0%
-# Finished Make data base on Mon Jul 18 13:25:05 2022
+# Finished Make data base on Mon Jul 18 21:36:52 2022
 
  

@@ -3,28 +3,38 @@
 #include <mutex>
 #include <thread>
 #include <atomic>
+#include <vector>
+#include <functional>
 
 #include <string.h>
 #include <string>
 
 using namespace std;
 
+mutex m;
+int x = 0 ;
+atomic<int> y = atomic<int>(0);
+
+int func(int a) {
+
+    y.fetch_add( 1 );
+
+    return 0;
+}
+
 int main() {
-    char name[] = "calvin";
-    char *str; 
 
-    // strcpy(str, name);
-    
-    // strcat(str, " has joined");
+    vector<thread> thread_pool;
+    thread_pool.reserve(10);
 
-    sprintf( str, "%s has joined", name);
+    int num = 1;    
 
-    cout << "Str before: " << str << endl;
-
-    memset(str, 0, strlen(str));
-
-    cout << "Str after: " << str << endl;
-
+    for( int i = 0; i < 10; i++) {
+        thread_pool[i] = thread( func, num );
+        thread_pool[i].detach();
+    }
+    sleep(3);
+    cout << "Main: " << y.load() << endl;
     return 0;
 }
 
