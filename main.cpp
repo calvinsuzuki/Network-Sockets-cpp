@@ -3,6 +3,9 @@
 #include <mutex>
 #include <thread>
 #include <atomic>
+#include <vector>
+#include <functional>
+#include <algorithm>
 
 #include <string.h>
 #include <string>
@@ -10,23 +13,48 @@
 using namespace std;
 
 int main() {
-    char name[] = "calvin";
-    char *str; 
 
-    // strcpy(str, name);
-    
-    // strcat(str, " has joined");
+    string str = "calvin suzuki ";
 
-    sprintf( str, "%s has joined", name);
+    while( true ) {
+        if ( str[str.length()-1] == ' ' ) {
+            str = str.substr(0, str.length()-1);
+        }
+        else {
+            break;
+        }
+    }
 
-    cout << "Str before: " << str << endl;
+    cout << "<" << str << ">" << endl;
+    return 0;
+}
 
-    memset(str, 0, strlen(str));
+/* mutex m;
+int x = 0 ;
+atomic<int> y = atomic<int>(0);
 
-    cout << "Str after: " << str << endl;
+int func(int a) {
+
+    y.fetch_add( 1 );
 
     return 0;
 }
+
+int main() {
+
+    vector<thread> thread_pool;
+    thread_pool.reserve(10);
+
+    int num = 1;    
+
+    for( int i = 0; i < 10; i++) {
+        thread_pool[i] = thread( func, num );
+        thread_pool[i].detach();
+    }
+    sleep(3);
+    cout << "Main: " << y.load() << endl;
+    return 0;
+} */
 
 
 // mutex m;
