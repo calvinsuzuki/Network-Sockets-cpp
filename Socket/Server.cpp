@@ -41,27 +41,52 @@ void disconnectClient(client_t*);
 
 void sendAndReadACK(const char *s, client_t *client) {
     char ACK[3];
+    bool readACK = true;
+    int j = 0;
+    chrono::_V2::steady_clock::time_point start, end;
 
-    for( int j = 0; j < 6; ++j ) {
-        if( write(client->sockfd, s, strlen(s)) < 0 ) {
-            cout << "ERROR: write to descriptor failed" << endl;
-            break;
-        }
-        recv( client->sockfd, ACK, 3, 0 );
-        if (strcmp( ACK, "ACK") != 0) {
-            if ( j < 5) {
-                cout << " > Server: Not received ACK from " << client->nick;
-                cout << " (attempt " << (j+1) << ")" << endl;
-                memset( ACK, 0, 3 );    
-                sleep(1);
-            } else {
-                cout << " > Server: " << client->nick << 
-                    " is not responding. Disconnecting..." << endl;
-                // Disconects this client
-                client->leave_flag = true;
+    while(true){
+        if(readACK){
+            if( write(client->sockfd, s, strlen(s)) < 0 ) {
+                cout << "ERROR: write to descriptor failed" << endl;
+                break;
             }
         }
-        else break;
+
+        if(readACK){
+            recv( client->sockfd, ACK, 3, 0 );
+            
+            // Set read flag and UNLOCK mutex
+            readACK = false;
+            m.unlock();
+
+            start = chrono::steady_clock::now();
+
+            // Analyse ACK
+            if (strcmp( ACK, "ACK") != 0) {
+                if ( j < 5) {
+                    cout << " > Server: Not received ACK from " << client->nick;
+                    cout << " (attempt " << (j+1) << ")" << endl;
+                    memset( ACK, 0, 3 );
+                    j++;    
+                    // sleep(1);
+                } else {
+                    cout << " > Server: " << client->nick << 
+                        " is not responding. Disconnecting..." << endl;
+                    // Disconects this client
+                    client->leave_flag = true;
+                    break;
+                }
+            }
+            else break;
+        }
+
+        end = chrono::steady_clock::now();
+        if (chrono::duration_cast<chrono::seconds>(end - start).count() > 1){
+            readACK = true;
+            m.lock();
+        };
+        
     }
     return;
 }
