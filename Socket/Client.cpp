@@ -99,8 +99,8 @@ void sendHandler(int mySocket) {
     }
 
         // Fragments the message 
-        if ( plain_text == "/quit" ) break;
         sendFragments(plain_text, mySocket);
+        if ( plain_text == "/quit" ) break;
     }
  
     catch_ctrl_c_and_exit(2);
