@@ -25,7 +25,7 @@ int main() {
         }
     }
 
-    cout << "<" << str << ">" << endl;
+    cout << "<" << str2int( str ) << ">" << endl;
     return 0;
 }
 

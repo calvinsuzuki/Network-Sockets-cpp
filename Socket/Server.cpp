@@ -72,7 +72,8 @@ void sendToAll(const char *s) {
     // ***LOCKED ACTION***
     for(int i=0; i<MAX_CLIENTS; ++i){
         if(clients[i]) {
-            sendAndReadACK( s, clients[i] );            
+            if( !(clients[i]->leave_flag) )
+                sendAndReadACK( s, clients[i] );            
         }
     }
     m.unlock();
@@ -93,6 +94,50 @@ void sendToOne(const char *s, int uid) {
     m.unlock();
 }
 
+void announceDisconnect( client_t *client ) {
+    char sendBuff[50+16];
+    sprintf( sendBuff, "** %s has left! **", client->nick);
+    client->leave_flag = true;
+    sendToAll( sendBuff );
+    cout << sendBuff << endl;
+    return;
+}
+
+void serverCommandSet(const char *s, client_t *client) {
+    string str;
+
+    str = s;
+
+    if ( str == "/quit" ) {
+        announceDisconnect( client );
+    }
+    else if ( str == "/ping" ) {
+        sendToOne( "pong!", client->uid );
+    } else if ( str == "/join" ) {
+        cout << "command /join !" << endl;
+        
+    } else if ( str == "/nickname" ) {
+        cout << "command /nickname !" << endl;
+        
+    } else if ( str == "/kick" ) {
+        cout << "command /kick !" << endl;
+        
+    } else if ( str == "/mute" ) {
+        cout << "command /mute !" << endl;
+        
+    } else if ( str == "/unmute" ) {
+        cout << "command /unmute !" << endl;
+        
+    } else if ( str == "/whois" ) {
+        cout << "command /whois !" << endl;
+        
+    } else {
+        str = "Unknown command " + str + "!";
+        sendToOne( str.c_str(), client->uid);
+    } 
+
+    return;
+}
 
 /* Handle all communication with the client */
 void handle_client(client_t *currentClient) {
@@ -118,16 +163,18 @@ void handle_client(client_t *currentClient) {
         sendToAll( sendBuff );
     }
 
-    memset(sendBuff, 0, BUFFER_SZ); // Clears buffer
     while( !(currentClient->leave_flag) ) {        
+        memset(sendBuff, 0, BUFFER_SZ); // Clears buffer
         int receive = recv( currentClient->sockfd, sendBuff, BUFFER_SZ, 0);
         if ( receive > 0 ) {
-            if ( strlen(sendBuff) > 0 && strcmp(sendBuff, "/quit") != 0 ) {
-
-                if ( strcmp( sendBuff, "/ping") == 0 ) {
-                    sendToOne( "pong!", currentClient->uid );
+            if ( strlen(sendBuff) > 0 ) {
+                
+                // If its a command
+                if ( sendBuff[0] == '/' ) {
+                    serverCommandSet( sendBuff, currentClient );
                     continue;
                 }
+                
                 // Send message to all
                 aux = currentClient->nick;
                 aux.append( ": " );
@@ -137,17 +184,13 @@ void handle_client(client_t *currentClient) {
             }
         } 
         /* Leave anouncement */
-        else if( receive == 0 || strcmp(sendBuff, "/quit") == 0 ) {
-            sprintf( sendBuff, "** %s has left! **", currentClient->nick);
-            sendToAll( sendBuff );
-            cout << sendBuff << endl;
-            currentClient->leave_flag = true;
+        else if( receive == 0 ) {
+            announceDisconnect( currentClient );
+            continue;
         } else {
             cout << "ERROR IN RECEIVE MESSAGE" << endl;
             currentClient->leave_flag = true;
         }
-
-        memset(sendBuff, 0, BUFFER_SZ); // Clears buffer
     }
 
     disconnectClient( currentClient );
@@ -296,5 +339,4 @@ class Server {
             }
             else return 0;
         }
-
 };
