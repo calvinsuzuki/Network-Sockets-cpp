@@ -32,48 +32,67 @@ typedef struct{ // client struct
     int sockfd;
     int uid;
     char nick[50];
-    bool leave_flag = false;
+    bool leave_flag;
 } client_t;
 
 client_t *clients[MAX_CLIENTS];
 
 void disconnectClient(client_t*);
 
+void sendAndReadACK(const char *s, client_t *client) {
+    char ACK[3];
+
+    for( int j = 0; j < 6; ++j ) {
+        if( write(client->sockfd, s, strlen(s)) < 0 ) {
+            cout << "ERROR: write to descriptor failed" << endl;
+            break;
+        }
+        recv( client->sockfd, ACK, 3, 0 );
+        if (strcmp( ACK, "ACK") != 0) {
+            if ( j < 5) {
+                cout << " > Server: Not received ACK from " << client->nick;
+                cout << " (attempt " << (j+1) << ")" << endl;
+                memset( ACK, 0, 3 );    
+                sleep(1);
+            } else {
+                cout << " > Server: " << client->nick << 
+                    " is not responding. Disconnecting..." << endl;
+                // Disconects this client
+                client->leave_flag = true;
+            }
+        }
+        else break;
+    }
+    return;
+}
+
 /* Send message to all clients */
 void sendToAll(const char *s) {
-    char ACK[3];
-    
     m.lock();
     // ***LOCKED ACTION***
     for(int i=0; i<MAX_CLIENTS; ++i){
-        if(clients[i]){
-            for( int j = 0; j < 6; ++j ) {
-                if( write(clients[i]->sockfd, s, strlen(s)) < 0 ) {
-                    cout << "ERROR: write to descriptor failed" << endl;
-                    break;
-                }
-                recv( clients[i]->sockfd, ACK, 3, 0 );
-                if (strcmp( ACK, "ACK") != 0) {
-                    if ( j < 5) {
-                        cout << " > Server: Not received ACK from " << clients[i]->nick;
-                        cout << " (attempt " << (j+1) << ")" << endl;
-                        memset( ACK, 0, 3 );    
-                        sleep(1);
-                    } else {
-                        cout << " > Server: " << clients[i]->nick << 
-                            " is not responding. Disconnecting..." << endl;
-                        // Disconects this client
-                        clients[i]->leave_flag = true;
-                    }
-                }
-                else 
-                    break;
-            }
-
+        if(clients[i]) {
+            sendAndReadACK( s, clients[i] );            
         }
     }
     m.unlock();
 }
+
+/* Send message to all clients */
+void sendToOne(const char *s, int uid) {
+    m.lock();
+    // ***LOCKED ACTION***
+    for(int i=0; i<MAX_CLIENTS; ++i){
+        if(clients[i]) {
+            if( clients[i]->uid == uid ) {
+                sendAndReadACK( s, clients[i] );            
+                cout << " >Server: " << s <<" -> " << clients[i]->nick << endl;
+            }
+        }
+    }
+    m.unlock();
+}
+
 
 /* Handle all communication with the client */
 void handle_client(client_t *currentClient) {
@@ -100,16 +119,13 @@ void handle_client(client_t *currentClient) {
     }
 
     memset(sendBuff, 0, BUFFER_SZ); // Clears buffer
-
     while( !(currentClient->leave_flag) ) {        
         int receive = recv( currentClient->sockfd, sendBuff, BUFFER_SZ, 0);
         if ( receive > 0 ) {
             if ( strlen(sendBuff) > 0 && strcmp(sendBuff, "/quit") != 0 ) {
 
                 if ( strcmp( sendBuff, "/ping") == 0 ) {
-                    aux = "pong!";
-                    write(currentClient->sockfd, aux.c_str(), aux.length() );
-                    cout << " >Server: pong! -> " << currentClient->nick << endl;
+                    sendToOne( "pong!", currentClient->uid );
                     continue;
                 }
                 // Send message to all
@@ -120,7 +136,7 @@ void handle_client(client_t *currentClient) {
                 cout << aux << endl;
             }
         } 
-        /* Left anouncement */
+        /* Leave anouncement */
         else if( receive == 0 || strcmp(sendBuff, "/quit") == 0 ) {
             sprintf( sendBuff, "** %s has left! **", currentClient->nick);
             sendToAll( sendBuff );
@@ -202,6 +218,7 @@ class Server {
                 client->address = client_addrs;
                 client->sockfd = listenFD;
                 client->uid = uid++;
+                client->leave_flag = false;
 
                 // Add client to the queue
                 m.lock();   // ***LOCK***                

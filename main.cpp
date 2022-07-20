@@ -5,13 +5,31 @@
 #include <atomic>
 #include <vector>
 #include <functional>
+#include <algorithm>
 
 #include <string.h>
 #include <string>
 
 using namespace std;
 
-mutex m;
+int main() {
+
+    string str = "calvin suzuki ";
+
+    while( true ) {
+        if ( str[str.length()-1] == ' ' ) {
+            str = str.substr(0, str.length()-1);
+        }
+        else {
+            break;
+        }
+    }
+
+    cout << "<" << str << ">" << endl;
+    return 0;
+}
+
+/* mutex m;
 int x = 0 ;
 atomic<int> y = atomic<int>(0);
 
@@ -36,7 +54,7 @@ int main() {
     sleep(3);
     cout << "Main: " << y.load() << endl;
     return 0;
-}
+} */
 
 
 // mutex m;

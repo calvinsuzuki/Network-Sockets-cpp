@@ -88,6 +88,16 @@ void sendHandler(int mySocket) {
     // Read the string until find EOF
     while ( getline(cin, plain_text) ) {
         str_overwrite_stdout();
+        // Remove final spaces
+        while( true ) {
+        if ( plain_text[plain_text.length()-1] == ' ' ) {
+            plain_text = plain_text.substr(0, plain_text.length()-1);
+        }
+        else {
+            break;
+        }
+    }
+
         // Fragments the message 
         if ( plain_text == "/quit" ) break;
         sendFragments(plain_text, mySocket);
