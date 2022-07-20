@@ -32,24 +32,44 @@ typedef struct{ // client struct
     int sockfd;
     int uid;
     char nick[50];
+    bool leave_flag = false;
 } client_t;
 
 client_t *clients[MAX_CLIENTS];
 
-/* Send message to all clients except sender */
-void sendToAll(const char *s, int uid) {
+void disconnectClient(client_t*);
+
+/* Send message to all clients */
+void sendToAll(const char *s) {
+    char ACK[3];
     
     m.lock();
     // ***LOCKED ACTION***
     for(int i=0; i<MAX_CLIENTS; ++i){
         if(clients[i]){
-            if(clients[i]->uid != uid) { 
-                // All but the sender
-                if(write(clients[i]->sockfd, s, strlen(s)) < 0){
+            for( int j = 0; j < 6; ++j ) {
+                if( write(clients[i]->sockfd, s, strlen(s)) < 0 ) {
                     cout << "ERROR: write to descriptor failed" << endl;
                     break;
                 }
+                recv( clients[i]->sockfd, ACK, 3, 0 );
+                if (strcmp( ACK, "ACK") != 0) {
+                    if ( j < 5) {
+                        cout << " > Server: Not received ACK from " << clients[i]->nick;
+                        cout << " (attempt " << (j+1) << ")" << endl;
+                        memset( ACK, 0, 3 );    
+                        sleep(1);
+                    } else {
+                        cout << " > Server: " << clients[i]->nick << 
+                            " is not responding. Disconnecting..." << endl;
+                        // Disconects this client
+                        clients[i]->leave_flag = true;
+                    }
+                }
+                else 
+                    break;
             }
+
         }
     }
     m.unlock();
@@ -60,10 +80,9 @@ void handle_client(client_t *currentClient) {
     char sendBuff[BUFFER_SZ];
     string aux = "";
     char nickBuff[32];
-    bool leave_flag = false;
 
     clientCount.fetch_add(1); // Increments the atomic counter
-    cout << "Clients Online: " << clientCount.load() << endl;
+    cout << " > Server: Clients Online: " << clientCount.load() << " -> ";
     
     // Receive the nickname
     recv(currentClient->sockfd, nickBuff, 50, 0);
@@ -76,44 +95,50 @@ void handle_client(client_t *currentClient) {
         strcpy( currentClient->nick, nickBuff );
 
         sprintf( sendBuff, "** %s has joined **", nickBuff); // sendBuff = {NICK} has joined!
-        cout << nickBuff << " ( uid = " << currentClient->uid << " )" << endl;        
-        sendToAll( sendBuff, -1 );
+        cout << nickBuff << " joined ( uid = " << currentClient->uid << " )" << endl;        
+        sendToAll( sendBuff );
     }
 
     memset(sendBuff, 0, BUFFER_SZ); // Clears buffer
 
-    while( !leave_flag ) {        
+    while( !(currentClient->leave_flag) ) {        
         int receive = recv( currentClient->sockfd, sendBuff, BUFFER_SZ, 0);
         if ( receive > 0 ) {
             if ( strlen(sendBuff) > 0 && strcmp(sendBuff, "/quit") != 0 ) {
 
                 if ( strcmp( sendBuff, "/ping") == 0 ) {
-                    aux = "pong";
+                    aux = "pong!";
                     write(currentClient->sockfd, aux.c_str(), aux.length() );
+                    cout << " >Server: pong! -> " << currentClient->nick << endl;
                     continue;
                 }
                 // Send message to all
                 aux = currentClient->nick;
                 aux.append( ": " );
                 aux.append( sendBuff );
-                sendToAll( aux.c_str(), currentClient->uid );
+                sendToAll( aux.c_str() );
                 cout << aux << endl;
             }
         } 
         /* Left anouncement */
         else if( receive == 0 || strcmp(sendBuff, "/quit") == 0 ) {
             sprintf( sendBuff, "** %s has left! **", currentClient->nick);
-            sendToAll( sendBuff, -1 );
+            sendToAll( sendBuff );
             cout << sendBuff << endl;
-            leave_flag = true;
+            currentClient->leave_flag = true;
         } else {
             cout << "ERROR IN RECEIVE MESSAGE" << endl;
-            leave_flag = true;
+            currentClient->leave_flag = true;
         }
 
         memset(sendBuff, 0, BUFFER_SZ); // Clears buffer
     }
 
+    disconnectClient( currentClient );
+    return;
+}
+
+void disconnectClient(client_t *currentClient) {
     close( currentClient->sockfd );
     
     m.lock();   // ***LOCKED***
@@ -130,14 +155,12 @@ void handle_client(client_t *currentClient) {
     free( currentClient );
     currentClient = NULL;
     clientCount.fetch_sub(1);// Decrements the atomic counter
-    
-    cout << "Clients Online: " << clientCount.load() << endl;
-    return;
+    cout << " > Server: Clients Online: " << clientCount.load() << endl;
 }
 
-class Socket {
+class Server {
     public:
-        Socket(unsigned int _port, const char * _ipAddrs) {
+        Server(unsigned int _port, const char * _ipAddrs) {
             port = _port;
             ipAddrs = _ipAddrs;
             hint = socketHandler();
@@ -224,8 +247,6 @@ class Socket {
 
         int multipleConnections() {
             int opt = 1;
-            // ERROR: CAN'T BIND TO PORT
-            // if( setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 )  
             if( setsockopt(_socket, SOL_SOCKET, (SO_REUSEPORT | SO_REUSEADDR), (char *)&opt, sizeof(opt)) < 0 ) 
             {  
                 perror("setsockopt");  
