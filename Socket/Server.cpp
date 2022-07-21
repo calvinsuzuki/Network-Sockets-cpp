@@ -9,7 +9,10 @@
 #include <unistd.h>
 
 #include <atomic>
+<<<<<<< HEAD
 //#include <boost/algorithm/string.cpp>
+=======
+>>>>>>> 4f86854387f952feaaaf8938c794582be94c40c1
 #include <iostream>
 #include <mutex>
 #include <sstream>
@@ -198,9 +201,23 @@ void joinChannel(string channel, client_t *client) {
 
     // Advertising
     if (first) {
+        // Log to the server
+        cout << "> Server: " << client->nick << " created the channel " << channel_name << " and is the admin." << endl;
+
         // Send a message to the client advertising the new nickname
         sprintf(message, "** You are the channel admin. **");
         sendToOne(message, client->uid);
+<<<<<<< HEAD
+=======
+    } else {
+        // Log to the server
+        cout << "> Server: " << client->nick << " joined the channel " << channel_name << endl;
+
+        // Send a message to the client advertising the new nickname
+        char message[150];
+        sprintf(message, "** You joined the channel %s**", channel_name.c_str());
+        sendToOne(message, client->uid);
+>>>>>>> 4f86854387f952feaaaf8938c794582be94c40c1
     }
     memset( message, 0, BUFFER_SZ ); // Clears buffer
 
@@ -222,6 +239,54 @@ void changeNickname(string new_nickname, client_t *client) {
     sendToOne(message, client->uid);
 };
 
+void kickUser(string nickname, client_t *admin){
+    char message[BUFFER_SZ];
+
+    if (!admin->admin){
+        // Log to the server
+        cout << "> Server: " << admin->nick << " tryied to kick " << nickname << " but he/she is not an admin." << endl;
+
+        // Send a message to the admin 
+        sendToOne("** You are not an admin **", admin->uid);
+
+        return;
+    }
+
+    // find the nickname and kick it, otherwise send a message to admin
+    bool nick_exists = false;
+    for (int i = 0; i <  MAX_CLIENTS; i++) {
+        if (clients[i]){
+            if (strcmp(clients[i]->nick, nickname.c_str()) == 0){
+                
+                // Log to the server
+                cout << "> Server: " << admin->nick << " kicked " << nickname << "." << endl;
+                
+                // Tell the client that he/she was kicked
+                sprintf(message, "** You was kicked by %s **", admin->nick);
+                sendToOne(message, clients[i]->uid);
+                
+                // Tell the admin that he/she was kicked the client
+                sprintf(message, "** You kicked %s **", nickname.c_str());
+                sendToOne(message, admin->uid);
+                
+                announceDisconnect(clients[i]);
+                nick_exists = true;
+                break;
+            }
+        }
+    }
+
+    if (!nick_exists) {
+        // Log to the server
+        cout << "> Server: " << admin->nick << " tryied to kick " << nickname << " but " << nickname << " doesn't exist" << endl;
+
+        sprintf(message, "** User %s doesn't exist. /kick failed **", nickname.c_str());
+        sendToOne(message, admin->uid);
+    }
+
+    return;
+}
+
 void serverCommandSet(const char *s, client_t *client) {
     // Char to string
     string str;
@@ -238,6 +303,7 @@ void serverCommandSet(const char *s, client_t *client) {
     if (command == "/quit") {
         cout << "** command /quit from " << client->nick << " **" << endl;
         announceDisconnect(client);
+
     } else if (command == "/ping") {
         cout << "** command /ping from " << client->nick << " **" << endl;
         sendToOne("pong!", client->uid);
@@ -252,6 +318,7 @@ void serverCommandSet(const char *s, client_t *client) {
 
     } else if (command == "/kick") {
         cout << "** command /kick from " << client->nick << " **" << endl;
+        kickUser(command_arg, client);
 
     } else if (command == "/mute") {
         cout << "** command /mute from " << client->nick << " **" << endl;
