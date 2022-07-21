@@ -230,7 +230,7 @@ void kickUser(string nickname, client_t *admin){
 
     if (!admin->admin){
         // Log to the server
-        cout << "> Server: " << admin->nick << " tryied to kick " << nickname << " but he/she is not an admin." << endl;
+        cout << "> Server: " << admin->nick << " tried to kick " << nickname << " but it is not an admin." << endl;
 
         // Send a message to the admin 
         sendToOne("** You are not an admin **", admin->uid);
@@ -254,7 +254,7 @@ void kickUser(string nickname, client_t *admin){
     bool nick_exists = false;
     for (int i = 0; i <  MAX_CLIENTS; i++) {
         if (clients[i]){
-            if (strcmp(clients[i]->nick, nickname.c_str()) == 0){
+            if ((strcmp(clients[i]->nick, nickname.c_str()) == 0) && (strcmp(admin->channel, clients[i]->channel) == 0)){
                 
                 // Log to the server
                 cout << "> Server: " << admin->nick << " kicked " << nickname << "." << endl;
@@ -278,14 +278,129 @@ void kickUser(string nickname, client_t *admin){
 
     if (!nick_exists) {
         // Log to the server
-        cout << "> Server: " << admin->nick << " tryied to kick " << nickname << " but " << nickname << " doesn't exist" << endl;
+        cout << "> Server: " << admin->nick << " tried to kick " << nickname << " but " << nickname << " doesn't exist" << endl;
 
-        sprintf(message, "** User %s doesn't exist. /kick failed **", nickname.c_str());
+        sprintf(message, "** User %s doesn't exist in %s channel. /kick failed **", nickname.c_str(), admin->channel);
         sendToOne(message, admin->uid);
         memset( message, 0, BUFFER_SZ ); // Clears buffer
     }
 
     return;
+}
+
+void whoIs(string nickname, client_t *admin){
+    char message[BUFFER_SZ];
+
+    if (!admin->admin){
+        // Log to the server
+        cout << "> Server: " << admin->nick << " tried /whois " << nickname << " but it is not an admin." << endl;
+
+        // Send a message to the admin 
+        sendToOne("** You are not an admin **", admin->uid);
+        memset( message, 0, BUFFER_SZ ); // Clears buffer
+
+        return;
+    }
+
+    // find the nickname and kick it, otherwise send a message to admin
+    bool nick_exists = false;
+    for (int i = 0; i <  MAX_CLIENTS; i++) {
+        if (clients[i]){
+            if ((strcmp(clients[i]->nick, nickname.c_str()) == 0) && (strcmp(admin->channel, clients[i]->channel) == 0)){
+                // Send to the admin the client IP address
+                char ip_adrr[INET_ADDRSTRLEN];
+                inet_ntop(AF_INET, &(clients[i]->address.sin_addr), ip_adrr, INET_ADDRSTRLEN);
+
+                cout << "> Server: " << admin->nick << " requested " << nickname << " IP address." << endl; 
+                sprintf(message, "** %s IP address is %s **", nickname.c_str(), ip_adrr);
+                sendToOne(message, admin->uid);
+                memset( message, 0, BUFFER_SZ ); // Clears buffer
+
+                nick_exists = true; 
+                break;
+            }
+        }
+    }
+    
+    if (!nick_exists) {
+        // Log to the server
+        cout << "> Server: " << admin->nick << " tried /whois " << nickname << " but " << nickname << " doesn't exist." << endl;
+
+        sprintf(message, "** User %s doesn't exist in %s channel. /whois failed **", nickname.c_str(), admin->channel);
+        sendToOne(message, admin->uid);
+        memset( message, 0, BUFFER_SZ ); // Clears buffer
+    }
+
+    return;
+}
+
+void muteUser(bool mute, string nickname, client_t *admin){
+    char message[BUFFER_SZ];
+
+    if (!admin->admin){
+        // Log to the server
+        cout << "> Server: " << admin->nick << " tried to mute/unmute " << nickname << " but it is not an admin." << endl;
+
+        // Send a message to the admin 
+        sendToOne("** You are not an admin **", admin->uid);
+        memset( message, 0, BUFFER_SZ ); // Clears buffer
+
+        return;
+    }
+
+    // find the nickname and kick it, otherwise send a message to admin
+    bool nick_exists = false;
+    for (int i = 0; i <  MAX_CLIENTS; i++) {
+        if (clients[i]){
+            if ((strcmp(clients[i]->nick, nickname.c_str()) == 0) && (strcmp(admin->channel, clients[i]->channel) == 0)){
+                
+                // Set mute
+                clients[i]->mute = mute;
+
+                if(mute){
+                    // Log to the server
+                    cout << "> Server: " << admin->nick << " mute " << nickname << "." << endl; 
+                    
+                    // Send to the admin
+                    sprintf(message, "** You muted %s **", nickname.c_str());
+                    sendToOne(message, admin->uid);
+                    memset( message, 0, BUFFER_SZ ); // Clears buffer
+
+                    // Send to the client
+                    sprintf(message, "** You were muted by %s **", admin->nick);
+                    sendToOne(message, clients[i]->uid);
+                    memset( message, 0, BUFFER_SZ ); // Clears buffer
+                }
+
+                else{
+                    // Log to the server
+                    cout << "> Server: " << admin->nick << " unmute " << nickname << "." << endl; 
+                    
+                    // Send to the admin
+                    sprintf(message, "** You unmuted %s **", nickname.c_str());
+                    sendToOne(message, admin->uid);
+                    memset( message, 0, BUFFER_SZ ); // Clears buffer
+
+                    // Send to the client
+                    sprintf(message, "** You were unmuted by %s **", admin->nick);
+                    sendToOne(message, clients[i]->uid);
+                    memset( message, 0, BUFFER_SZ ); // Clears buffer
+                }
+
+                nick_exists = true; 
+                break;
+            }
+        }
+    }
+
+    if (!nick_exists) {
+        // Log to the server
+        cout << "> Server: " << admin->nick << " tried /mute or /unmute " << nickname << " but " << nickname << " doesn't exist." << endl;
+
+        sprintf(message, "** User %s doesn't exist in %s channel **", nickname.c_str(), admin->channel);
+        sendToOne(message, admin->uid);
+        memset( message, 0, BUFFER_SZ ); // Clears buffer
+    }
 }
 
 void serverCommandSet(const char *s, client_t *client) {
@@ -323,13 +438,15 @@ void serverCommandSet(const char *s, client_t *client) {
 
     } else if (command == "/mute") {
         cout << "** command /mute from " << client->nick << " **" << endl;
+        muteUser(true, command_arg, client);
 
     } else if (command == "/unmute") {
         cout << "** command /unmute from " << client->nick << " **" << endl;
+        muteUser(false, command_arg, client); 
 
     } else if (command == "/whois") {
         cout << "** command /whois from " << client->nick << " **" << endl;
-        // whoIs(command_arg, client);
+        whoIs(command_arg, client);
 
     } else {
         sendToOne("Unknown command", client->uid);
