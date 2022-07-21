@@ -139,7 +139,7 @@ void sendToAll(const char *s, const char * channel) {
 
 /* Disconnects a given client and announces it  */
 void announceDisconnect(client_t *client) {
-    char sendBuff[50 + 16];
+    char sendBuff[BUFFER_SZ];
     sprintf(sendBuff, "** %s left the server! **", client->nick);
     client->leave_flag = true;
     sendToAll(sendBuff); // sendToAll(sendBuff, client->channel);
@@ -222,6 +222,7 @@ void changeNickname(string new_nickname, client_t *client) {
     char message[150];
     sprintf(message, "** Your nickname changed from %s to %s **", old_nick, new_nickname.c_str());
     sendToOne(message, client->uid);
+    memset( message, 0, BUFFER_SZ ); // Clears buffer
 };
 
 void kickUser(string nickname, client_t *admin){
@@ -233,6 +234,7 @@ void kickUser(string nickname, client_t *admin){
 
         // Send a message to the admin 
         sendToOne("** You are not an admin **", admin->uid);
+        memset( message, 0, BUFFER_SZ ); // Clears buffer
 
         return;
     }
@@ -260,11 +262,13 @@ void kickUser(string nickname, client_t *admin){
                 // Tell the client that he/she was kicked
                 sprintf(message, "** You was kicked by %s **", admin->nick);
                 sendToOne(message, clients[i]->uid);
-                
+                memset( message, 0, BUFFER_SZ ); // Clears buffer
+
                 // Tell the admin that he/she was kicked the client
                 sprintf(message, "** You kicked %s **", nickname.c_str());
                 sendToOne(message, admin->uid);
-                
+                memset( message, 0, BUFFER_SZ ); // Clears buffer
+
                 announceDisconnect(clients[i]);
                 nick_exists = true;
                 break;
@@ -278,6 +282,7 @@ void kickUser(string nickname, client_t *admin){
 
         sprintf(message, "** User %s doesn't exist. /kick failed **", nickname.c_str());
         sendToOne(message, admin->uid);
+        memset( message, 0, BUFFER_SZ ); // Clears buffer
     }
 
     return;
@@ -294,7 +299,7 @@ void serverCommandSet(const char *s, client_t *client) {
     string command_arg;
     stringstream streamData(str);
     getline(streamData, command, separator);
-    getline(streamData, command_arg, separator);
+    getline(streamData, command_arg);
 
     if (command == "/quit") {
         cout << "** command /quit from " << client->nick << " **" << endl;
@@ -324,7 +329,7 @@ void serverCommandSet(const char *s, client_t *client) {
 
     } else if (command == "/whois") {
         cout << "** command /whois from " << client->nick << " **" << endl;
-        whoIs(command_arg, client);
+        // whoIs(command_arg, client);
 
     } else {
         sendToOne("Unknown command", client->uid);
