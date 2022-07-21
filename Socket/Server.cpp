@@ -34,7 +34,7 @@ typedef struct {  // client struct
     int uid;
     char nick[50];
     bool leave_flag;
-    char channel_name[50];
+    char channel[200];
     bool mute;
     bool admin;
 } client_t;
@@ -107,20 +107,42 @@ void sendToAll(const char *s) {
     // ***LOCKED ACTION***
     for (int i = 0; i < MAX_CLIENTS; ++i) {
         if (clients[i]) {
-            if (!(clients[i]->leave_flag))
+            if (!(clients[i]->leave_flag)) {
                 // sendAndReadACK( s, clients[i] );
                 sendWithoutACK(s, clients[i]);
+            }
         }
     }
     m.unlock();
+    // Server log
+    cout << "GLOBAL >> " << s << endl; 
 }
 
+/* Send message to all clients of a certain channel*/
+void sendToAll(const char *s, const char * channel) {
+    m.lock();
+    // ***LOCKED ACTION***
+    for (int i = 0; i < MAX_CLIENTS; ++i) {
+        if (clients[i]) {
+            if ( !(clients[i]->leave_flag) ) {
+                if ( strcmp(clients[i]->channel, channel ) == 0 ) { 
+                    sendWithoutACK(s, clients[i]);
+                    // sendAndReadACK( s, clients[i] );
+                }
+            }
+        }
+    }
+    m.unlock();
+    // Server log
+    cout << channel << " >> " << s << endl;
+}
+
+/* Disconnects a given client and announces it  */
 void announceDisconnect(client_t *client) {
     char sendBuff[50 + 16];
-    sprintf(sendBuff, "** %s has left! **", client->nick);
+    sprintf(sendBuff, "** %s left the server! **", client->nick);
     client->leave_flag = true;
-    sendToAll(sendBuff);
-    cout << sendBuff << endl;
+    sendToAll(sendBuff); // sendToAll(sendBuff, client->channel);
     return;
 }
 
@@ -133,14 +155,15 @@ void sendToOne(const char *s, int uid) {
             if (clients[i]->uid == uid) {
                 // sendAndReadACK( s, clients[i] );
                 sendWithoutACK(s, clients[i]);
-                cout << " >Server: " << s << " -> " << clients[i]->nick << endl;
+                // Server log
+                cout << " > Server: " << s << " -> " << clients[i]->nick << endl;
             }
         }
     }
     m.unlock();
 }
 
-void joinChannel(string channel_name, client_t *client) {
+void joinChannel(string channel, client_t *client) {
     // Check client
     if (!client) {
         return;
@@ -148,18 +171,26 @@ void joinChannel(string channel_name, client_t *client) {
 
     // Analyse all channels and see if its the first one
     bool first = true;
+    char message[BUFFER_SZ];
     for (int i = 0; i < MAX_CLIENTS; i++) {
         if (clients[i]) {
-            if (strcmp(clients[i]->channel_name, channel_name.c_str()) == 0) {
+            if (strcmp(clients[i]->channel, channel.c_str()) == 0) {
                 first = false;
                 break;
             }
         }
     }
 
-    cout << "HERE" << endl;
-    // Set channel_name on the client struct
-    strcpy(client->channel_name, channel_name.c_str());
+    // Set channel on the client struct, announces its transition
+    sprintf(message, "** %s left the channel %s **", client->nick, client->channel);
+    sendToAll( message, client->channel );
+    memset( message, 0, BUFFER_SZ ); // Clears buffer
+    
+    strcpy( client->channel, channel.c_str() );
+
+    sprintf(message, "** %s joined the channel %s **", client->nick, client->channel);
+    sendToAll( message, client->channel );
+    memset( message, 0, BUFFER_SZ ); // Clears buffer
 
     // Make the client admin if it's the first one
     client->admin = first;
@@ -167,21 +198,14 @@ void joinChannel(string channel_name, client_t *client) {
     // Advertising
     if (first) {
         // Log to the server
-        cout << "> Server: " << client->nick << " created the channel " << channel_name << " and is the admin." << endl;
+        cout << "> Server: " << client->nick << " created the channel " << channel << " and is the admin." << endl;
 
         // Send a message to the client advertising the new nickname
-        char message[150];
-        sprintf(message, "** You created the channel %s and you are the admin **", channel_name.c_str());
-        sendToOne(message, client->uid);
-    } else {
-        // Log to the server
-        cout << "> Server: " << client->nick << " joined the channel " << channel_name << endl;
-
-        // Send a message to the client advertising the new nickname
-        char message[150];
-        sprintf(message, "** You joined the channel %s**", channel_name.c_str());
+        sprintf(message, "** You are the channel admin. **");
         sendToOne(message, client->uid);
     }
+    memset( message, 0, BUFFER_SZ ); // Clears buffer
+
 };
 
 void changeNickname(string new_nickname, client_t *client) {
@@ -303,8 +327,7 @@ void serverCommandSet(const char *s, client_t *client) {
         whoIs(command_arg, client);
 
     } else {
-        cout << "** Unknown command " << command << " from " << client->nick << " **" << endl;
-        sendToOne(command.c_str(), client->uid);
+        sendToOne("Unknown command", client->uid);
     }
 
     return;
@@ -317,7 +340,8 @@ void handle_client(client_t *currentClient) {
     char nickBuff[32];
 
     clientCount.fetch_add(1);  // Increments the atomic counter
-    cout << " > Server: Clients Online: " << clientCount.load() << " -> ";
+    cout << " > Server: Clients Online: " << clientCount.load() << " -> "
+        << nickBuff << " ( uid = " << currentClient->uid << " )" << endl;
 
     // Receive the nickname
     recv(currentClient->sockfd, nickBuff, 50, 0);
@@ -327,10 +351,8 @@ void handle_client(client_t *currentClient) {
         cout << "Didn't enter the name.\n";
     } else {
         strcpy(currentClient->nick, nickBuff);
-
-        sprintf(sendBuff, "** %s has joined **", nickBuff);  // sendBuff = {NICK} has joined!
-        cout << nickBuff << " joined ( uid = " << currentClient->uid << " )" << endl;
-        sendToAll(sendBuff);
+        sprintf(sendBuff, "** %s joined the server **", nickBuff);
+        sendToAll(sendBuff); //sendToAll(sendBuff, currentClient->channel);
     }
 
     while (!(currentClient->leave_flag)) {
@@ -351,7 +373,7 @@ void handle_client(client_t *currentClient) {
                 aux = currentClient->nick;
                 aux.append(": ");
                 aux.append(sendBuff);
-                sendToAll(aux.c_str());
+                sendToAll(aux.c_str(), currentClient->channel);   
                 cout << aux << endl;
             }
         }
@@ -436,7 +458,7 @@ class Server {
             client->sockfd = listenFD;
             client->uid = uid++;
             client->leave_flag = false;
-            strcpy(client->channel_name, "#general");
+            strcpy(client->channel, "#general");
             client->mute = false;
             client->admin = false;
 
