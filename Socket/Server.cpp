@@ -76,7 +76,7 @@ void sendAndReadACK(const char *s, client_t *client) {
                     j++;
                     // sleep(1);
                 } else {
-                    cout << " > Server: " << client->nick << " is not responding. Disconnecting..." << endl;
+                    cout << "> Server: " << client->nick << " is not responding. Disconnecting..." << endl;
                     // Disconects this client
                     client->leave_flag = true;
                     break;
@@ -95,7 +95,10 @@ void sendAndReadACK(const char *s, client_t *client) {
 }
 
 void sendWithoutACK(const char *s, client_t *client) {
-    if (write(client->sockfd, s, strlen(s)) < 0) {
+    char message[strlen(s)+1];
+    strcpy( message, s);
+    strcat( message, "\n");
+    if (write(client->sockfd, message, strlen(message)) < 0) {
         cout << "ERROR: write to descriptor failed" << endl;
     }
     return;
@@ -139,7 +142,7 @@ void sendToAll(const char *s, const char * channel) {
 
 /* Disconnects a given client and announces it  */
 void announceDisconnect(client_t *client) {
-    char sendBuff[50 + 16];
+    char sendBuff[BUFFER_SZ];
     sprintf(sendBuff, "** %s left the server! **", client->nick);
     client->leave_flag = true;
     sendToAll(sendBuff); // sendToAll(sendBuff, client->channel);
@@ -156,7 +159,7 @@ void sendToOne(const char *s, int uid) {
                 // sendAndReadACK( s, clients[i] );
                 sendWithoutACK(s, clients[i]);
                 // Server log
-                cout << " > Server: " << s << " -> " << clients[i]->nick << endl;
+                cout << "> Server: " << s << " -> " << clients[i]->nick << endl;
             }
         }
     }
@@ -229,7 +232,7 @@ void kickUser(string nickname, client_t *admin){
 
     if (!admin->admin){
         // Log to the server
-        cout << "> Server: " << admin->nick << " tryied to kick " << nickname << " but he/she is not an admin." << endl;
+        cout << "> Server: " << admin->nick << " tried to kick " << nickname << " but he/she is not an admin." << endl;
 
         // Send a message to the admin 
         sendToOne("** You are not an admin **", admin->uid);
@@ -247,7 +250,7 @@ void kickUser(string nickname, client_t *admin){
                 cout << "> Server: " << admin->nick << " kicked " << nickname << "." << endl;
                 
                 // Tell the client that he/she was kicked
-                sprintf(message, "** You was kicked by %s **", admin->nick);
+                sprintf(message, "** You were kicked by %s **", admin->nick);
                 sendToOne(message, clients[i]->uid);
                 
                 // Tell the admin that he/she was kicked the client
@@ -263,7 +266,7 @@ void kickUser(string nickname, client_t *admin){
 
     if (!nick_exists) {
         // Log to the server
-        cout << "> Server: " << admin->nick << " tryied to kick " << nickname << " but " << nickname << " doesn't exist" << endl;
+        cout << "> Server: " << admin->nick << " tried to kick " << nickname << " but " << nickname << " doesn't exist" << endl;
 
         sprintf(message, "** User %s doesn't exist. /kick failed **", nickname.c_str());
         sendToOne(message, admin->uid);
@@ -286,36 +289,36 @@ void serverCommandSet(const char *s, client_t *client) {
     getline(streamData, command_arg, separator);
 
     if (command == "/quit") {
-        cout << "** command /quit from " << client->nick << " **" << endl;
+        cout << "** /quit called by " << client->nick << " **" << endl;
         announceDisconnect(client);
 
     } else if (command == "/ping") {
-        cout << "** command /ping from " << client->nick << " **" << endl;
+        cout << "** /ping called by " << client->nick << " **" << endl;
         sendToOne("pong!", client->uid);
 
     } else if (command == "/join") {
-        cout << "** command /join from " << client->nick << " **" << endl;
+        cout << "** /join called by " << client->nick << " **" << endl;
         joinChannel(command_arg, client);
 
     } else if (command == "/nickname") {
-        cout << "** command /nickname from " << client->nick << " **" << endl;
+        cout << "** /nickname called by " << client->nick << " **" << endl;
         changeNickname(command_arg, client);
 
     } else if (command == "/kick") {
-        cout << "** command /kick from " << client->nick << " **" << endl;
+        cout << "** /kick called by " << client->nick << " **" << endl;
         kickUser(command_arg, client);
 
     } else if (command == "/mute") {
-        cout << "** command /mute from " << client->nick << " **" << endl;
+        cout << "** /mute called by " << client->nick << " **" << endl;
 
     } else if (command == "/unmute") {
-        cout << "** command /unmute from " << client->nick << " **" << endl;
+        cout << "** /unmute called by " << client->nick << " **" << endl;
 
     } else if (command == "/whois") {
-        cout << "** command /whois from " << client->nick << " **" << endl;
+        cout << "** /whois called by " << client->nick << " **" << endl;
 
     } else {
-        sendToOne("Unknown command", client->uid);
+        sendToOne("Unknown command!", client->uid);
     }
 
     return;
@@ -325,17 +328,17 @@ void serverCommandSet(const char *s, client_t *client) {
 void handle_client(client_t *currentClient) {
     char sendBuff[BUFFER_SZ];
     string aux = "";
-    char nickBuff[32];
+    char nickBuff[50];
 
     clientCount.fetch_add(1);  // Increments the atomic counter
-    cout << " > Server: Clients Online: " << clientCount.load() << " -> "
+    cout << "> Server: Clients Online: " << clientCount.load() << " -> "
         << nickBuff << " ( uid = " << currentClient->uid << " )" << endl;
 
     // Receive the nickname
     recv(currentClient->sockfd, nickBuff, 50, 0);
 
     // Join anouncement
-    if (strlen(nickBuff) < 2 || strlen(nickBuff) - 1 > 32) {
+    if (strlen(nickBuff) < 2 || strlen(nickBuff) - 1 > 50) {
         cout << "Didn't enter the name.\n";
     } else {
         strcpy(currentClient->nick, nickBuff);
@@ -362,7 +365,6 @@ void handle_client(client_t *currentClient) {
                 aux.append(": ");
                 aux.append(sendBuff);
                 sendToAll(aux.c_str(), currentClient->channel);   
-                cout << aux << endl;
             }
         }
         /* Leave anouncement */
