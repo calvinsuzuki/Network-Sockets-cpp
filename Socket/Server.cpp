@@ -213,6 +213,17 @@ void kickUser(string nickname, client_t *admin){
         return;
     }
 
+    // See if the admin is trying to kick itself
+    if(strcmp(admin->nick, nickname.c_str()) == 0) {
+        // Log to the server
+        cout << "> Server: " << admin->nick << " tryied to kick himself/herself." << endl;
+
+        // Send a message to the admin
+        sendToOne("** You cannot kick yourself **", admin->uid);
+
+        return;
+    }
+
     // find the nickname and kick it, otherwise send a message to admin
     bool nick_exists = false;
     for (int i = 0; i <  MAX_CLIENTS; i++) {
@@ -289,6 +300,7 @@ void serverCommandSet(const char *s, client_t *client) {
 
     } else if (command == "/whois") {
         cout << "** command /whois from " << client->nick << " **" << endl;
+        whoIs(command_arg, client);
 
     } else {
         cout << "** Unknown command " << command << " from " << client->nick << " **" << endl;
