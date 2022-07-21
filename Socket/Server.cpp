@@ -227,7 +227,7 @@ void changeNickname(string new_nickname, client_t *client) {
     strcpy(client->nick, new_nickname.c_str());
 
     // Send a message to the client advertising the new nickname
-    char message[150];
+    char message[BUFFER_SZ];
     sprintf(message, "** Your nickname changed from %s to %s **", old_nick, new_nickname.c_str());
     sendToOne(message, client->uid);
     memset( message, 0, BUFFER_SZ ); // Clears buffer

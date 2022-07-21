@@ -10,38 +10,19 @@ Configuramos o ``Makefile`` para facilitar a compilação dos arquivos, que no m
 
 Para compilar e executar o Servidor: 
 
-```
+```bash
 make sv
 ```
 
-Para compilar e executar o Cliente: 
+Abra outro terminal e compile e execute o cliente:
 
-```
+```bash
 make client
 ```
 ## Funcionamento do programa
 
-Precisamos executar o servidor ANTES do cliente para a conexão acontecer.
+O Golden Chat é uma aplicação no modelo cliente-servidor. O servidor centraliza todas as conexões com os clientes, organizando a hierarquia de administradores, configurações de clientes e troca de mensagens.
 
- **1.** O *server* inicialmente espera uma primeira mensagem do *client* : 
-```
-=> Enter '$' at the end of the message
-Waiting client message...
-```
- **2.** *Client* faz o envio da mensagem e espera uma resposta do *server*:
-```
-Client: oi $
-Waiting server message...
-```
- **3.** No terminal do *server*, a mensagem do *client* é exibida e recomeça o ciclo de troca de mensagens:
-```
-=> Enter '$' at the end of the message
-Waiting client message...
-Client: oi $ 
-Server: ola $      
-Waiting client message...
-```
+O servidor apresenta um log, aonde é possível analisar tudo o que acontece nele. A interface do cliente é mais amigável e apresenta informações do canal que o usuário pertence. Essas informações são, aviso de entrada de novo usuário, ações do administrador de mudo/não mudo e banimento. 
 
-## Considerações 
-
-Podemos observar que no momento atual, o trabalho deu ênfase na comunicação básica via *socket*, infelizmente, não demos a profundidade de criar a fluidez de um *chat* normal, i.e., uma recepção e envio de mensagens livre entre as máquinas. Sempre que um fala, o próximo precisa responder.
+Por fim, testamos o servidor configurado com DMZ recebendo clientes remotos (outras máquinas acessando pelo IP Global) e funcionou muito bem! Seguem alguns prints da interface, espero que aproveite!
