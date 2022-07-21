@@ -38,10 +38,10 @@ void recvHandler(int mySocket) {
         int receive = recv(mySocket, message, BUFFER_SZ, 0);
         if (receive > 0) {
             // Send receive 
-            // if( write(mySocket, "ACK", 3) < 0 ) {   
-            //     cout << "ERROR: write to descriptor failed" << endl;
-            //     break;
-            // }
+            if( write(mySocket, "ACK", 3) < 0 ) {   
+                cout << "ERROR: write to descriptor failed" << endl;
+                break;
+            }
             printf("%s", message);
             str_overwrite_stdout();
         } else if (receive == 0) {
