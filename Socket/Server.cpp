@@ -9,10 +9,6 @@
 #include <unistd.h>
 
 #include <atomic>
-<<<<<<< HEAD
-//#include <boost/algorithm/string.cpp>
-=======
->>>>>>> 4f86854387f952feaaaf8938c794582be94c40c1
 #include <iostream>
 #include <mutex>
 #include <sstream>
@@ -202,22 +198,11 @@ void joinChannel(string channel, client_t *client) {
     // Advertising
     if (first) {
         // Log to the server
-        cout << "> Server: " << client->nick << " created the channel " << channel_name << " and is the admin." << endl;
+        cout << "> Server: " << client->nick << " created the channel " << channel << " and is the admin." << endl;
 
         // Send a message to the client advertising the new nickname
         sprintf(message, "** You are the channel admin. **");
         sendToOne(message, client->uid);
-<<<<<<< HEAD
-=======
-    } else {
-        // Log to the server
-        cout << "> Server: " << client->nick << " joined the channel " << channel_name << endl;
-
-        // Send a message to the client advertising the new nickname
-        char message[150];
-        sprintf(message, "** You joined the channel %s**", channel_name.c_str());
-        sendToOne(message, client->uid);
->>>>>>> 4f86854387f952feaaaf8938c794582be94c40c1
     }
     memset( message, 0, BUFFER_SZ ); // Clears buffer
 
