@@ -20,7 +20,7 @@ using namespace std;
 
 #define ERROR -1
 #define BUFFER_SZ 4096
-#define MAX_CLIENTS 3
+#define MAX_CLIENTS 10
 
 // Global variables
 atomic<unsigned int> clientCount{0};
@@ -76,7 +76,7 @@ void sendAndReadACK(const char *s, client_t *client) {
                     j++;
                     // sleep(1);
                 } else {
-                    cout << " > Server: " << client->nick << " is not responding. Disconnecting..." << endl;
+                    cout << "> Server: " << client->nick << " is not responding. Disconnecting..." << endl;
                     // Disconects this client
                     client->leave_flag = true;
                     break;
@@ -95,7 +95,10 @@ void sendAndReadACK(const char *s, client_t *client) {
 }
 
 void sendWithoutACK(const char *s, client_t *client) {
-    if (write(client->sockfd, s, strlen(s)) < 0) {
+    char message[strlen(s)+1];
+    strcpy( message, s);
+    strcat( message, "\n");
+    if (write(client->sockfd, message, strlen(message)) < 0) {
         cout << "ERROR: write to descriptor failed" << endl;
     }
     return;
@@ -156,7 +159,7 @@ void sendToOne(const char *s, int uid) {
                 // sendAndReadACK( s, clients[i] );
                 sendWithoutACK(s, clients[i]);
                 // Server log
-                cout << " > Server: " << s << " -> " << clients[i]->nick << endl;
+                cout << "> Server: " << s << " -> " << clients[i]->nick << endl;
             }
         }
     }
@@ -260,7 +263,7 @@ void kickUser(string nickname, client_t *admin){
                 cout << "> Server: " << admin->nick << " kicked " << nickname << "." << endl;
                 
                 // Tell the client that he/she was kicked
-                sprintf(message, "** You was kicked by %s **", admin->nick);
+                sprintf(message, "** You were kicked by %s **", admin->nick);
                 sendToOne(message, clients[i]->uid);
                 memset( message, 0, BUFFER_SZ ); // Clears buffer
 
@@ -417,59 +420,59 @@ void serverCommandSet(const char *s, client_t *client) {
     getline(streamData, command_arg);
 
     if (command == "/quit") {
-        cout << "** command /quit from " << client->nick << " **" << endl;
+        cout << "** /quit called by " << client->nick << " **" << endl;
         announceDisconnect(client);
 
     } else if (command == "/ping") {
-        cout << "** command /ping from " << client->nick << " **" << endl;
+        cout << "** /ping called by " << client->nick << " **" << endl;
         sendToOne("pong!", client->uid);
 
     } else if (command == "/join") {
-        cout << "** command /join from " << client->nick << " **" << endl;
+        cout << "** /join called by " << client->nick << " **" << endl;
         joinChannel(command_arg, client);
 
     } else if (command == "/nickname") {
-        cout << "** command /nickname from " << client->nick << " **" << endl;
+        cout << "** /nickname called by " << client->nick << " **" << endl;
         changeNickname(command_arg, client);
 
     } else if (command == "/kick") {
-        cout << "** command /kick from " << client->nick << " **" << endl;
+        cout << "** /kick called by " << client->nick << " **" << endl;
         kickUser(command_arg, client);
 
     } else if (command == "/mute") {
-        cout << "** command /mute from " << client->nick << " **" << endl;
+        cout << "** /mute called by " << client->nick << " **" << endl;
         muteUser(true, command_arg, client);
 
     } else if (command == "/unmute") {
-        cout << "** command /unmute from " << client->nick << " **" << endl;
-        muteUser(false, command_arg, client); 
+        cout << "** /unmute called by " << client->nick << " **" << endl;
+        muteUser(false, command_arg, client);
 
     } else if (command == "/whois") {
         cout << "** command /whois from " << client->nick << " **" << endl;
         whoIs(command_arg, client);
 
     } else {
-        sendToOne("Unknown command", client->uid);
+        sendToOne("Unknown command!", client->uid);
     }
 
     return;
 }
 
 /* Handle all communication with the client */
-void handle_client(client_t *currentClient) {
+void handleClient(client_t *currentClient) {
     char sendBuff[BUFFER_SZ];
     string aux = "";
-    char nickBuff[32];
+    char nickBuff[50];
 
     clientCount.fetch_add(1);  // Increments the atomic counter
-    cout << " > Server: Clients Online: " << clientCount.load() << " -> "
+    cout << "> Server: Clients Online: " << clientCount.load() << " -> "
         << nickBuff << " ( uid = " << currentClient->uid << " )" << endl;
 
     // Receive the nickname
     recv(currentClient->sockfd, nickBuff, 50, 0);
 
     // Join anouncement
-    if (strlen(nickBuff) < 2 || strlen(nickBuff) - 1 > 32) {
+    if (strlen(nickBuff) < 2 || strlen(nickBuff) - 1 > 50) {
         cout << "Didn't enter the name.\n";
     } else {
         strcpy(currentClient->nick, nickBuff);
@@ -482,6 +485,12 @@ void handle_client(client_t *currentClient) {
         int receive = recv(currentClient->sockfd, sendBuff, BUFFER_SZ, 0);
         if (receive > 0) {
             if (strlen(sendBuff) > 0) {
+
+                if(currentClient->mute){
+                    sendToOne("** You are muted **", currentClient->uid);
+                    continue;
+                }
+
                 // If its a command
                 if (sendBuff[0] == '/') {
                     serverCommandSet(sendBuff, currentClient);
@@ -496,7 +505,6 @@ void handle_client(client_t *currentClient) {
                 aux.append(": ");
                 aux.append(sendBuff);
                 sendToAll(aux.c_str(), currentClient->channel);   
-                cout << aux << endl;
             }
         }
         /* Leave anouncement */
@@ -594,7 +602,7 @@ class Server {
             }
             m.unlock();  // ***UNLOCK***
 
-            thread tr(handle_client, client);
+            thread tr(handleClient, client);
             tr.detach();
 
             sleep(1);  // Reduce CPU usage ???

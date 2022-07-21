@@ -42,7 +42,7 @@ void recvHandler(int mySocket) {
             //     cout << "ERROR: write to descriptor failed" << endl;
             //     break;
             // }
-            printf("%s\n", message);
+            printf("%s", message);
             str_overwrite_stdout();
         } else if (receive == 0) {
             break;
