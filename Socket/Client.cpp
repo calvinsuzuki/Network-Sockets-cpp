@@ -3,7 +3,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-
+#include <sstream>
 #include <atomic>
 #include <iostream>
 #include <mutex>
@@ -17,6 +17,12 @@ using namespace std;
 #define MAX_CLIENTS 10
 #define MAX_NICK_SIZE 50
 
+// Colors
+string red = "\033[31m";
+string green = "\033[32m";
+string blue = "\033[34m";
+string def = "\033[39m";
+
 // Global variables
 volatile atomic<int> flag(0);
 // mutex m;
@@ -26,14 +32,9 @@ void catch_ctrl_c_and_exit(int sig) {
     flag = 1;
 }
 
-void str_overwrite_stdout() {
-    fflush(stdout);
-    printf("> ");
-    fflush(stdout);
-}
-
 void recvHandler(int mySocket) {
     char message[BUFFER_SZ];
+    string str;
     while ( true ) {
         int receive = recv(mySocket, message, BUFFER_SZ, 0);
         if (receive > 0) {
@@ -42,8 +43,28 @@ void recvHandler(int mySocket) {
             //     cout << "ERROR: write to descriptor failed" << endl;
             //     break;
             // }
-            printf("%s", message);
-            str_overwrite_stdout();
+            str = message;
+
+            // Colors the messages
+            if ( str.find(": ") != string::npos ) {
+                cout << blue 
+                    << str.substr(0, str.find(':'))
+                    << def;
+                cout << str.substr(str.find(':'), str.length());
+                
+            } else if ( (str.find("** ") != string::npos) && (str.find(" **") != string::npos) ){
+                cout << str.substr(0, str.find("** ")+3) 
+                    << green << str.substr(str.find("** ")+3, str.find(" **")-3) << def
+                    << str.substr(str.find(" **"), str.length());
+            } else if ( (str.find(">> ") != string::npos) && (str.find(" <<") != string::npos) ){
+                cout << str.substr(0, str.find(">> ")+3) 
+                    << red << str.substr(str.find(">> ")+3, str.find(" <<")-3) << def
+                    << str.substr(str.find(" <<"), str.length());
+            } else 
+                cout << str;
+
+            // Split command and command argument
+            
         } else if (receive == 0) {
             break;
         } else {
@@ -87,7 +108,6 @@ void sendHandler(int mySocket) {
 
     // Read the string until find EOF
     while ( getline(cin, plain_text) ) {
-        str_overwrite_stdout();
         // Remove final spaces
         while( true ) {
         if ( plain_text[plain_text.length()-1] == ' ' ) {

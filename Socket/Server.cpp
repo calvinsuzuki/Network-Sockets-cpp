@@ -10,13 +10,19 @@
 #include <sstream>
 #include <string>
 #include <thread>
-#include <vector>
 
 using namespace std;
 
 #define ERROR -1
 #define BUFFER_SZ 4096
 #define MAX_CLIENTS 10
+
+// Colors
+string red = "\033[31m";
+string green = "\033[32m";
+string blue = "\033[34m";
+string def = "\033[39m";
+
 
 // Global variables
 atomic<unsigned int> clientCount{0};
@@ -147,6 +153,7 @@ void announceDisconnect(client_t *client) {
 
 /* Send message to all clients */
 void sendToOne(const char *s, int uid) {
+    
     m.lock();
     // ***LOCKED ACTION***
     for (int i = 0; i < MAX_CLIENTS; ++i) {
@@ -155,7 +162,9 @@ void sendToOne(const char *s, int uid) {
                 // sendAndReadACK( s, clients[i] );
                 sendWithoutACK(s, clients[i]);
                 // Server log
-                cout << "> Server: " << s << " -> " << clients[i]->nick << endl;
+                cout << red 
+                     << "> Server: " << s << " -> " << clients[i]->nick << endl
+                     << def;
             }
         }
     }
@@ -200,7 +209,7 @@ void joinChannel(string channel, client_t *client) {
         cout << "> Server: " << client->nick << " created the channel " << channel << " and is the admin." << endl;
 
         // Send a message to the client advertising the new nickname
-        sprintf(message, "** You are the channel admin. **");
+        sprintf(message, ">> You are the channel admin. <<");
         sendToOne(message, client->uid);
     }
     memset( message, 0, BUFFER_SZ ); // Clears buffer
@@ -232,7 +241,7 @@ void kickUser(string nickname, client_t *admin){
         cout << "> Server: " << admin->nick << " tried to kick " << nickname << " but it is not an admin." << endl;
 
         // Send a message to the admin 
-        sendToOne("** You are not an admin **", admin->uid);
+        sendToOne(">> You are not an admin <<", admin->uid);
         memset( message, 0, BUFFER_SZ ); // Clears buffer
 
         return;
@@ -241,10 +250,10 @@ void kickUser(string nickname, client_t *admin){
     // See if the admin is trying to kick itself
     if(strcmp(admin->nick, nickname.c_str()) == 0) {
         // Log to the server
-        cout << "> Server: " << admin->nick << " tryied to kick himself/herself." << endl;
+        cout << "> Server: " << admin->nick << " tried to kick himself/herself." << endl;
 
         // Send a message to the admin
-        sendToOne("** You cannot kick yourself **", admin->uid);
+        sendToOne(">> You cannot kick yourself <<", admin->uid);
 
         return;
     }
@@ -259,12 +268,12 @@ void kickUser(string nickname, client_t *admin){
                 cout << "> Server: " << admin->nick << " kicked " << nickname << "." << endl;
                 
                 // Tell the client that he/she was kicked
-                sprintf(message, "** You were kicked by %s **", admin->nick);
+                sprintf(message, ">> You were kicked by %s <<", admin->nick);
                 sendToOne(message, clients[i]->uid);
                 memset( message, 0, BUFFER_SZ ); // Clears buffer
 
                 // Tell the admin that he/she was kicked the client
-                sprintf(message, "** You kicked %s **", nickname.c_str());
+                sprintf(message, ">> You kicked %s <<", nickname.c_str());
                 sendToOne(message, admin->uid);
                 memset( message, 0, BUFFER_SZ ); // Clears buffer
 
@@ -279,7 +288,7 @@ void kickUser(string nickname, client_t *admin){
         // Log to the server
         cout << "> Server: " << admin->nick << " tried to kick " << nickname << " but " << nickname << " doesn't exist" << endl;
 
-        sprintf(message, "** User %s doesn't exist in %s channel. /kick failed **", nickname.c_str(), admin->channel);
+        sprintf(message, ">> User %s doesn't exist in %s channel. /kick failed <<", nickname.c_str(), admin->channel);
         sendToOne(message, admin->uid);
         memset( message, 0, BUFFER_SZ ); // Clears buffer
     }
@@ -319,7 +328,7 @@ void whoIs(string nickname, client_t *admin) {
         cout << "> Server: " << admin->nick << " tried /whois " << nickname << " but it is not an admin." << endl;
 
         // Send a message to the admin 
-        sendToOne("** You are not an admin **", admin->uid);
+        sendToOne(">> You are not an admin <<", admin->uid);
         memset( message, 0, BUFFER_SZ ); // Clears buffer
 
         return;
@@ -335,7 +344,7 @@ void whoIs(string nickname, client_t *admin) {
                 inet_ntop(AF_INET, &(clients[i]->address.sin_addr), ip_adrr, INET_ADDRSTRLEN);
 
                 cout << "> Server: " << admin->nick << " requested " << nickname << " IP address." << endl; 
-                sprintf(message, "** %s IP address is %s **", nickname.c_str(), ip_adrr);
+                sprintf(message, ">> %s IP address is %s <<", nickname.c_str(), ip_adrr);
                 sendToOne(message, admin->uid);
                 memset( message, 0, BUFFER_SZ ); // Clears buffer
 
@@ -349,7 +358,7 @@ void whoIs(string nickname, client_t *admin) {
         // Log to the server
         cout << "> Server: " << admin->nick << " tried /whois " << nickname << " but " << nickname << " doesn't exist." << endl;
 
-        sprintf(message, "** User %s doesn't exist in %s channel. /whois failed **", nickname.c_str(), admin->channel);
+        sprintf(message, ">> User %s doesn't exist in %s channel. /whois failed <<", nickname.c_str(), admin->channel);
         sendToOne(message, admin->uid);
         memset( message, 0, BUFFER_SZ ); // Clears buffer
     }
@@ -365,7 +374,7 @@ void muteUser(bool mute, string nickname, client_t *admin){
         cout << "> Server: " << admin->nick << " tried to mute/unmute " << nickname << " but it is not an admin." << endl;
 
         // Send a message to the admin 
-        sendToOne("** You are not an admin **", admin->uid);
+        sendToOne(">> You are not an admin <<", admin->uid);
         memset( message, 0, BUFFER_SZ ); // Clears buffer
 
         return;
@@ -385,12 +394,12 @@ void muteUser(bool mute, string nickname, client_t *admin){
                     cout << "> Server: " << admin->nick << " mute " << nickname << "." << endl; 
                     
                     // Send to the admin
-                    sprintf(message, "** You muted %s **", nickname.c_str());
+                    sprintf(message, ">> You muted %s <<", nickname.c_str());
                     sendToOne(message, admin->uid);
                     memset( message, 0, BUFFER_SZ ); // Clears buffer
 
                     // Send to the client
-                    sprintf(message, "** You were muted by %s **", admin->nick);
+                    sprintf(message, ">> You've been muted by %s <<", admin->nick);
                     sendToOne(message, clients[i]->uid);
                     memset( message, 0, BUFFER_SZ ); // Clears buffer
                 }
@@ -400,12 +409,12 @@ void muteUser(bool mute, string nickname, client_t *admin){
                     cout << "> Server: " << admin->nick << " unmute " << nickname << "." << endl; 
                     
                     // Send to the admin
-                    sprintf(message, "** You unmuted %s **", nickname.c_str());
+                    sprintf(message, ">> You unmuted %s <<", nickname.c_str());
                     sendToOne(message, admin->uid);
                     memset( message, 0, BUFFER_SZ ); // Clears buffer
 
                     // Send to the client
-                    sprintf(message, "** You were unmuted by %s **", admin->nick);
+                    sprintf(message, ">> You were unmuted by %s <<", admin->nick);
                     sendToOne(message, clients[i]->uid);
                     memset( message, 0, BUFFER_SZ ); // Clears buffer
                 }
@@ -420,7 +429,7 @@ void muteUser(bool mute, string nickname, client_t *admin){
         // Log to the server
         cout << "> Server: " << admin->nick << " tried /mute or /unmute " << nickname << " but " << nickname << " doesn't exist." << endl;
 
-        sprintf(message, "** User %s doesn't exist in %s channel **", nickname.c_str(), admin->channel);
+        sprintf(message, ">> User %s doesn't exist in %s channel <<", nickname.c_str(), admin->channel);
         sendToOne(message, admin->uid);
         memset( message, 0, BUFFER_SZ ); // Clears buffer
     }
@@ -453,7 +462,7 @@ void serverCommandSet(const char *s, client_t *client) {
         if ( RFC_channelName( command_arg ) )
             joinChannel(command_arg, client);
         else 
-            sendToOne( "ERROR: Channel name not formated!", client->uid);
+            sendToOne( ">> Channel name not formated! <<", client->uid);
 
     } else if (command == "/nickname") {
         cout << "** /nickname called by " << client->nick << " **" << endl;
@@ -476,7 +485,7 @@ void serverCommandSet(const char *s, client_t *client) {
         whoIs(command_arg, client);
 
     } else {
-        sendToOne("Unknown command!", client->uid);
+        sendToOne(">> Unknown command! <<", client->uid);
     }
 
     return;
@@ -511,7 +520,7 @@ void handleClient(client_t *currentClient) {
             if (strlen(sendBuff) > 0) {
 
                 if(currentClient->mute){
-                    sendToOne("** You are muted **", currentClient->uid);
+                    sendToOne(">> You are muted <<", currentClient->uid);
                     continue;
                 }
 
