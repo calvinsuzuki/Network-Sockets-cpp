@@ -7,6 +7,7 @@
 #include <string.h>
 #include <string>
 #include <vector>
+#include <sstream>
 
 #include <netinet/in.h>
 #include <signal.h>
@@ -14,6 +15,9 @@
 
 #include <thread>
 #include <mutex>
+
+#include <bits/stdc++.h>
+#include <boost/algorithm/string.hpp>
 
 using namespace std;
 
@@ -91,6 +95,13 @@ void sendAndReadACK(const char *s, client_t *client) {
     return;
 }
 
+void sendWithoutACK(const char *s, client_t *client){
+    if( write(client->sockfd, s, strlen(s)) < 0 ) {
+        cout << "ERROR: write to descriptor failed" << endl;
+    }
+    return;
+}
+
 /* Send message to all clients */
 void sendToAll(const char *s) {
     m.lock();
@@ -98,22 +109,8 @@ void sendToAll(const char *s) {
     for(int i=0; i<MAX_CLIENTS; ++i){
         if(clients[i]) {
             if( !(clients[i]->leave_flag) )
-                sendAndReadACK( s, clients[i] );            
-        }
-    }
-    m.unlock();
-}
-
-/* Send message to all clients */
-void sendToOne(const char *s, int uid) {
-    m.lock();
-    // ***LOCKED ACTION***
-    for(int i=0; i<MAX_CLIENTS; ++i){
-        if(clients[i]) {
-            if( clients[i]->uid == uid ) {
-                sendAndReadACK( s, clients[i] );            
-                cout << " >Server: " << s <<" -> " << clients[i]->nick << endl;
-            }
+                // sendAndReadACK( s, clients[i] );
+                sendWithoutACK( s, clients[i] );            
         }
     }
     m.unlock();
@@ -128,37 +125,82 @@ void announceDisconnect( client_t *client ) {
     return;
 }
 
-void serverCommandSet(const char *s, client_t *client) {
-    string str;
+/* Send message to all clients */
+void sendToOne(const char *s, int uid) {
+    m.lock();
+    // ***LOCKED ACTION***
+    for(int i=0; i<MAX_CLIENTS; ++i){
+        if(clients[i]) {
+            if( clients[i]->uid == uid ) {
+                // sendAndReadACK( s, clients[i] );   
+                sendWithoutACK( s, clients[i] );         
+                cout << " >Server: " << s <<" -> " << clients[i]->nick << endl;
+            }
+        }
+    }
+    m.unlock();
+}
 
+void joinChannel(string channel_name, client_t *client){};
+
+void changeNickname(string new_nickname, client_t *client){
+
+    // Save old nickname
+    char old_nick[50];
+    strcpy(old_nick, client->nick);
+
+    // change nickname
+    strcpy(client->nick, new_nickname.c_str());
+    
+    // Send a message to the client advertising the new nickname
+    char message[150];
+    sprintf(message, "** Your nickname changed from %s to %s **", old_nick, new_nickname.c_str());
+    sendToOne( message, client->uid);
+};
+
+
+
+void serverCommandSet(const char *s, client_t *client) {
+    // Char to string
+    string str;
     str = s;
 
-    if ( str == "/quit" ) {
+    // Split command and command argument
+    const char separator = ' ';
+    string command;
+    string command_arg;
+    stringstream streamData(str);
+    getline(streamData, command, separator);
+    getline(streamData, command_arg, separator);
+
+    if ( command == "/quit" ) {
         announceDisconnect( client );
     }
-    else if ( str == "/ping" ) {
+    else if ( command == "/ping" ) {
         sendToOne( "pong!", client->uid );
-    } else if ( str == "/join" ) {
+
+    } else if ( command == "/join" ) {
         cout << "command /join !" << endl;
         
-    } else if ( str == "/nickname" ) {
+    } else if ( command == "/nickname" ) {
         cout << "command /nickname !" << endl;
+        changeNickname(command_arg, client);
         
-    } else if ( str == "/kick" ) {
+    } else if ( command == "/kick" ) {
         cout << "command /kick !" << endl;
         
-    } else if ( str == "/mute" ) {
+    } else if ( command == "/mute" ) {
         cout << "command /mute !" << endl;
         
-    } else if ( str == "/unmute" ) {
+    } else if ( command == "/unmute" ) {
         cout << "command /unmute !" << endl;
         
-    } else if ( str == "/whois" ) {
+    } else if ( command == "/whois" ) {
         cout << "command /whois !" << endl;
         
     } else {
-        str = "Unknown command " + str + "!";
-        sendToOne( str.c_str(), client->uid);
+        command = "Unknown command " + command + "!";
+        sendToOne( command.c_str(), client->uid);
     } 
 
     return;
@@ -197,6 +239,9 @@ void handle_client(client_t *currentClient) {
                 // If its a command
                 if ( sendBuff[0] == '/' ) {
                     serverCommandSet( sendBuff, currentClient );
+                    continue;
+                }
+                if (strcmp(sendBuff, "ACK") == 0) {
                     continue;
                 }
                 
