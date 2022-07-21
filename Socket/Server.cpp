@@ -1,5 +1,4 @@
 #include <arpa/inet.h>
-#include <bits/stdc++.h>
 #include <netinet/in.h>
 #include <signal.h>
 #include <string.h>
@@ -47,34 +46,37 @@ void disconnectClient(client_t *);
 
 // TODO: FIXME
 void sendAndReadACK(const char *s, client_t *client) {
-    char ACK[3];
-    bool readACK = true;
+    char ACK[BUFFER_SZ];
+    bool resendMessage = true;
     int j = 0;
+    int receive;
+    string aux;
     chrono::_V2::steady_clock::time_point start, end;
 
+    m.lock();
+
+    if (write(client->sockfd, s, strlen(s)) < 0) {
+        cout << "ERROR: write to descriptor failed" << endl;
+    }
+
+    start = chrono::steady_clock::now();
     while (true) {
-        if (readACK) {
-            if (write(client->sockfd, s, strlen(s)) < 0) {
-                cout << "ERROR: write to descriptor failed" << endl;
-                break;
-            }
-        }
+        receive = recv(client->sockfd, ACK, 3, 0);
+        cout << "fuck?" << endl;
+        cout << ACK << endl;
+        // if (receive == -1){
+        //     // Error occurred
 
-        if (readACK) {
-            recv(client->sockfd, ACK, 3, 0);
-
-            // Set read flag and UNLOCK mutex
-            readACK = false;
-            m.unlock();
-
-            start = chrono::steady_clock::now();
-
+        // }
+        
+        if(receive > 0){
             // Analyse ACK
-            if (strcmp(ACK, "ACK") != 0) {
+            aux = ACK;
+            if (aux.find("ACK") == string::npos) {
                 if (j < 5) {
                     cout << " > Server: Not received ACK from " << client->nick;
                     cout << " (attempt " << (j + 1) << ")" << endl;
-                    memset(ACK, 0, 3);
+                    // memset(ACK, 0, 3);
                     j++;
                     // sleep(1);
                 } else {
@@ -86,13 +88,25 @@ void sendAndReadACK(const char *s, client_t *client) {
             } else
                 break;
         }
+        
+        if (resendMessage) {
+            start = chrono::steady_clock::now();
+            resendMessage = false;
+            if (write(client->sockfd, s, strlen(s)) < 0) {
+                cout << "ERROR: write to descriptor failed" << endl;
+                break;
+            }
+        }
 
         end = chrono::steady_clock::now();
         if (chrono::duration_cast<chrono::seconds>(end - start).count() > 1) {
-            readACK = true;
-            m.lock();
+            resendMessage = true;
         };
+        sleep(0.01);
+        cout << "fuck" << endl;
     }
+
+    m.unlock();
     return;
 }
 
@@ -113,7 +127,6 @@ void sendToAll(const char *s) {
     for (int i = 0; i < MAX_CLIENTS; ++i) {
         if (clients[i]) {
             if (!(clients[i]->leave_flag)) {
-                // sendAndReadACK( s, clients[i] );
                 sendWithoutACK(s, clients[i]);
             }
         }
@@ -132,7 +145,8 @@ void sendToAll(const char *s, const char * channel) {
             if ( !(clients[i]->leave_flag) ) {
                 if ( strcmp(clients[i]->channel, channel ) == 0 ) { 
                     sendWithoutACK(s, clients[i]);
-                    // sendAndReadACK( s, clients[i] );
+                    // thread thrd = thread(sendAndReadACK, s, clients[i] );
+                    // thrd.detach();
                 }
             }
         }
@@ -140,15 +154,6 @@ void sendToAll(const char *s, const char * channel) {
     m.unlock();
     // Server log
     cout << channel << " >> " << s << endl;
-}
-
-/* Disconnects a given client and announces it  */
-void announceDisconnect(client_t *client) {
-    char sendBuff[BUFFER_SZ];
-    sprintf(sendBuff, "** %s left the server! **", client->nick);
-    client->leave_flag = true;
-    sendToAll(sendBuff); // sendToAll(sendBuff, client->channel);
-    return;
 }
 
 /* Send message to all clients */
@@ -169,6 +174,15 @@ void sendToOne(const char *s, int uid) {
         }
     }
     m.unlock();
+}
+
+/* Disconnects a given client and announces it  */
+void announceDisconnect(client_t *client) {
+    char sendBuff[BUFFER_SZ];
+    sprintf(sendBuff, "** %s left the server! **", client->nick);
+    client->leave_flag = true;
+    sendToAll(sendBuff); // sendToAll(sendBuff, client->channel);
+    return;
 }
 
 void joinChannel(string channel, client_t *client) {
@@ -548,6 +562,8 @@ void handleClient(client_t *currentClient) {
             cout << "ERROR IN RECEIVE MESSAGE" << endl;
             currentClient->leave_flag = true;
         }
+
+        sleep(0.001);
     }
 
     disconnectClient(currentClient);
