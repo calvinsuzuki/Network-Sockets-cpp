@@ -37,12 +37,16 @@ typedef struct{ // client struct
     int uid;
     char nick[50];
     bool leave_flag;
+    char channel_name[50] = "#general";
+    bool mute = false;
+    bool admin = false;
 } client_t;
 
 client_t *clients[MAX_CLIENTS];
 
 void disconnectClient(client_t*);
 
+// TODO: FIXME
 void sendAndReadACK(const char *s, client_t *client) {
     char ACK[3];
     bool readACK = true;
@@ -141,9 +145,13 @@ void sendToOne(const char *s, int uid) {
     m.unlock();
 }
 
-void joinChannel(string channel_name, client_t *client){};
+void joinChannel(string channel_name, client_t *client){
+
+};
 
 void changeNickname(string new_nickname, client_t *client){
+
+    // check new_nickname len
 
     // Save old nickname
     char old_nick[50];
@@ -157,8 +165,6 @@ void changeNickname(string new_nickname, client_t *client){
     sprintf(message, "** Your nickname changed from %s to %s **", old_nick, new_nickname.c_str());
     sendToOne( message, client->uid);
 };
-
-
 
 void serverCommandSet(const char *s, client_t *client) {
     // Char to string
@@ -174,32 +180,34 @@ void serverCommandSet(const char *s, client_t *client) {
     getline(streamData, command_arg, separator);
 
     if ( command == "/quit" ) {
+        cout << "** command /quit from " << client->nick << " **"<< endl;
         announceDisconnect( client );
     }
     else if ( command == "/ping" ) {
+        cout << "** command /ping from " << client->nick << " **"<< endl;
         sendToOne( "pong!", client->uid );
 
     } else if ( command == "/join" ) {
-        cout << "command /join !" << endl;
+        cout << "** command /join from " << client->nick << " **"<< endl;
         
     } else if ( command == "/nickname" ) {
-        cout << "command /nickname !" << endl;
+        cout << "** command /nickname from " << client->nick << " **"<< endl;
         changeNickname(command_arg, client);
         
     } else if ( command == "/kick" ) {
-        cout << "command /kick !" << endl;
+        cout << "** command /kick from " << client->nick << " **"<< endl;
         
     } else if ( command == "/mute" ) {
-        cout << "command /mute !" << endl;
+        cout << "** command /mute from " << client->nick << " **"<< endl;
         
     } else if ( command == "/unmute" ) {
-        cout << "command /unmute !" << endl;
+        cout << "** command /unmute from " << client->nick << " **"<< endl;
         
     } else if ( command == "/whois" ) {
-        cout << "command /whois !" << endl;
+        cout << "** command /whois from " << client->nick << " **"<< endl;
         
     } else {
-        command = "Unknown command " + command + "!";
+        cout << "** Unknown command " << command <<" from " << client->nick << " **"<< endl;
         sendToOne( command.c_str(), client->uid);
     } 
 
