@@ -291,6 +291,31 @@ void kickUser(string nickname, client_t *admin){
     return;
 }
 
+/* Restrains the channel name to RFC-1459 norm */
+bool RFC_channelName(string channel_name) {
+    if ( channel_name.length() > 200 || channel_name.length() <= 0 ) {
+        cout << "Bad size!" << endl;
+        return false;
+    }
+    if( channel_name[0] != '#' && channel_name[0] != '&' ) {
+        cout << "Bad format!" << endl;
+        return false;
+    }
+    if ( channel_name.find(' ') != string::npos ) {
+        cout << "Must not contain ' '" << endl;
+        return false;
+    }
+    if ( channel_name.find(',') != string::npos ) {
+        cout << "Must not contain ','" << endl;
+        return false;
+    }
+    if ( channel_name.find('^') != string::npos ) {
+        cout << "Must not contain '^'" << endl;
+        return false;
+    }
+    return true;
+}
+
 void serverCommandSet(const char *s, client_t *client) {
     // Char to string
     string str;
@@ -314,7 +339,11 @@ void serverCommandSet(const char *s, client_t *client) {
 
     } else if (command == "/join") {
         cout << "** /join called by " << client->nick << " **" << endl;
-        joinChannel(command_arg, client);
+        
+        if ( RFC_channelName( command_arg ) )
+            joinChannel(command_arg, client);
+        else 
+            sendToOne( "ERROR: Channel name not formated!", client->uid);
 
     } else if (command == "/nickname") {
         cout << "** /nickname called by " << client->nick << " **" << endl;

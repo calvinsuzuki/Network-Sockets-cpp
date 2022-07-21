@@ -14,18 +14,10 @@ using namespace std;
 
 int main() {
 
-    string str = "calvin suzuki ";
+    string str = "calvinsuzuki";
 
-    while( true ) {
-        if ( str[str.length()-1] == ' ' ) {
-            str = str.substr(0, str.length()-1);
-        }
-        else {
-            break;
-        }
-    }
+    if (str.find(' ') != string::npos) cout << "found!" << endl;
 
-    cout << "<" << str2int( str ) << ">" << endl;
     return 0;
 }
 
