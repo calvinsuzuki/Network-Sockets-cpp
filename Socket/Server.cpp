@@ -225,6 +225,7 @@ void changeNickname(string new_nickname, client_t *client) {
     char message[150];
     sprintf(message, "** Your nickname changed from %s to %s **", old_nick, new_nickname.c_str());
     sendToOne(message, client->uid);
+    memset( message, 0, BUFFER_SZ ); // Clears buffer
 };
 
 void kickUser(string nickname, client_t *admin){
@@ -236,6 +237,18 @@ void kickUser(string nickname, client_t *admin){
 
         // Send a message to the admin 
         sendToOne("** You are not an admin **", admin->uid);
+        memset( message, 0, BUFFER_SZ ); // Clears buffer
+
+        return;
+    }
+
+    // See if the admin is trying to kick itself
+    if(strcmp(admin->nick, nickname.c_str()) == 0) {
+        // Log to the server
+        cout << "> Server: " << admin->nick << " tryied to kick himself/herself." << endl;
+
+        // Send a message to the admin
+        sendToOne("** You cannot kick yourself **", admin->uid);
 
         return;
     }
@@ -252,11 +265,13 @@ void kickUser(string nickname, client_t *admin){
                 // Tell the client that he/she was kicked
                 sprintf(message, "** You were kicked by %s **", admin->nick);
                 sendToOne(message, clients[i]->uid);
-                
+                memset( message, 0, BUFFER_SZ ); // Clears buffer
+
                 // Tell the admin that he/she was kicked the client
                 sprintf(message, "** You kicked %s **", nickname.c_str());
                 sendToOne(message, admin->uid);
-                
+                memset( message, 0, BUFFER_SZ ); // Clears buffer
+
                 announceDisconnect(clients[i]);
                 nick_exists = true;
                 break;
@@ -270,6 +285,7 @@ void kickUser(string nickname, client_t *admin){
 
         sprintf(message, "** User %s doesn't exist. /kick failed **", nickname.c_str());
         sendToOne(message, admin->uid);
+        memset( message, 0, BUFFER_SZ ); // Clears buffer
     }
 
     return;
@@ -286,7 +302,7 @@ void serverCommandSet(const char *s, client_t *client) {
     string command_arg;
     stringstream streamData(str);
     getline(streamData, command, separator);
-    getline(streamData, command_arg, separator);
+    getline(streamData, command_arg);
 
     if (command == "/quit") {
         cout << "** /quit called by " << client->nick << " **" << endl;
@@ -315,7 +331,8 @@ void serverCommandSet(const char *s, client_t *client) {
         cout << "** /unmute called by " << client->nick << " **" << endl;
 
     } else if (command == "/whois") {
-        cout << "** /whois called by " << client->nick << " **" << endl;
+        cout << "** command /whois from " << client->nick << " **" << endl;
+        // whoIs(command_arg, client);
 
     } else {
         sendToOne("Unknown command!", client->uid);
