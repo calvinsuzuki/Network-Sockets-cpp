@@ -609,7 +609,7 @@ class Server {
         socketListen();
 
         cout << endl
-             << "--------------WELLCOME TO CHATROOM---------------\n"
+             << "**     Welcome to the Golden Chat     **\n"
              << endl;
 
         int listenFD;

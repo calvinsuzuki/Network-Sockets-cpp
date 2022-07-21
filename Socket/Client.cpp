@@ -39,10 +39,10 @@ void recvHandler(int mySocket) {
         int receive = recv(mySocket, message, BUFFER_SZ, 0);
         if (receive > 0) {
             // Send receive 
-            if( write(mySocket, "ACK\n", 3) < 0 ) {   
-                cout << "ERROR: write to descriptor failed" << endl;
-                break;
-            }
+            // if( write(mySocket, "ACK\n", 3) < 0 ) {   
+            //     cout << "ERROR: write to descriptor failed" << endl;
+            //     break;
+            // }
             str = message;
 
             // Colors the messages
