@@ -148,8 +148,8 @@ class Client {
             return ERROR;
         }
 
-        cout << "----------------SERVER CONNECTED-----------------" << endl;
-        cout << "Your name on the server is: " << nick << endl;
+        cout << "\n\u001b[33m**      Golden Server connected!      **\u001b[0m" << endl;
+        cout << "\u001b[33mYour name on the server is: " << nick << "\u001b[0m" << endl;
 
         // Send name
         if (send(_socket, nick, MAX_NICK_SIZE, 0) == ERROR) {
@@ -200,7 +200,8 @@ class Client {
         }
 
         int socketConnect() {
-            cout << "Trying to reach server at IP: " << ipAddrs << " Port: " << port << endl;
+            cout << "\u001b[33mTrying to reach server...\u001b[0m"<< endl;
+            cout << "\u001b[33mIP: " << ipAddrs << " Port: " << port << "\u001b[0m" << endl;
             int connectRes = connect(_socket, (sockaddr*)&hint, sizeof(hint));
             if (connectRes == -1) {
                 cout << "CONNECT EXCEPTION: Server not reachable!" << endl;

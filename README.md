@@ -1,4 +1,4 @@
-# Network-Sockets-cpp
+# **Golden Chat** - an Internet Relay Chat
 ## Membros
 - Caio Brandolim Rovetta     | N USP:11232156
 - Calvin Suzuki de Camargo   | N USP:11232420
@@ -14,7 +14,7 @@ Para compilar e executar o Servidor:
 make sv
 ```
 
-Abra outro terminal e compile e execute o cliente:
+Abra outro terminal, compile e execute o cliente:
 
 ```bash
 make client
@@ -26,3 +26,13 @@ O Golden Chat é uma aplicação no modelo cliente-servidor. O servidor centrali
 O servidor apresenta um log, aonde é possível analisar tudo o que acontece nele. A interface do cliente é mais amigável e apresenta informações do canal que o usuário pertence. Essas informações são, aviso de entrada de novo usuário, ações do administrador de mudo/não mudo e banimento. 
 
 Por fim, testamos o servidor configurado com DMZ recebendo clientes remotos (outras máquinas acessando pelo IP Global) e funcionou muito bem! Seguem alguns prints da interface, espero que aproveite!
+
+![demo1](assets/demo1.png)
+
+![demo2](assets/demo2.png)
+
+![demo3](assets/demo3.png)
+
+![demo4](assets/demo4.png)
+
+![demo5](assets/demo5.png)

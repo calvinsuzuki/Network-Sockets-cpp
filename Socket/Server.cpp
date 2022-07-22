@@ -608,8 +608,10 @@ class Server {
         socketBind();
         socketListen();
 
-        cout << endl
-             << "**     Welcome to the Golden Chat     **\n"
+        cout << endl;
+        cout << "\u001b[33m**           Starting server          **\u001b[0m" << endl;
+        cout << "\u001b[33m        IP:" << ipAddrs << " Port: " << port << " \u001b[0m" << endl;
+        cout << "\u001b[33m**     Welcome to the Golden Chat     **\u001b[0m\n"
              << endl;
 
         int listenFD;

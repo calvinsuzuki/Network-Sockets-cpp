@@ -5,13 +5,12 @@ using namespace std;
 string askName() {
     string name;
 
-    while ( true ) {
+    while (true) {
+        printf("\u001b[33mPlease enter your name: \u001b[0m");
 
-        printf("Please enter your name: ");
+        getline(cin, name);
 
-        getline( cin, name );
-
-        if (name.length()-1 > 50 || name.length() <= 2) {
+        if (name.length() - 1 > 50 || name.length() <= 2) {
             printf("Name must be less than 50 and more than 2 characters.\n");
             continue;
         }
@@ -21,20 +20,17 @@ string askName() {
 }
 
 int main() {
-    // string name, line, ip;  
-    // int port;
+    // define the server port and ip
+    int port = 53400;
+    char ip[] = "127.0.0.1";
 
-    // do {
-    //     cin >> line;
-    // } while( line != "/connect" );
-    
-    // cin >> ip;
-    // cin >> port;
+    cout << endl;
+    cout << "\u001b[33m**     Welcome to the Golden Chat     **\u001b[0m\n" << endl;
 
     string name;
     name = askName();
-	
-    Client client(name.c_str(), 53400, "127.0.0.1");
-    
+
+    Client client(name.c_str(), port, ip);
+
     client.startClient();
 }
