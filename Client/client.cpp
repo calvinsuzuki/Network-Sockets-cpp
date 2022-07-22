@@ -21,13 +21,18 @@ string askName() {
 
 int main() {
     // define the server port and ip
+    string line;
+    string name;
     int port = 53400;
-    char ip[] = "127.0.0.1";
+    char ip[] = "191.179.176.209";
 
     cout << endl;
     cout << "\u001b[33m**     Welcome to the Golden Chat     **\u001b[0m\n" << endl;
 
-    string name;
+    while ( line != "/connect" ) {
+        getline(cin, line);
+    }
+
     name = askName();
 
     Client client(name.c_str(), port, ip);

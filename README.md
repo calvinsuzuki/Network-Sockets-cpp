@@ -1,4 +1,13 @@
 # **Golden Chat** - an Internet Relay Chat
+
+<object width="425" height="350">
+  <param name="movie" value="https://youtu.be/9MnSZydcIG8" />
+  <param name="wmode" value="transparent" />
+  <embed src="https://youtu.be/9MnSZydcIG8"
+         type="application/x-shockwave-flash"
+         wmode="transparent" width="425" height="350" />
+</object>
+
 ## Membros
 - Caio Brandolim Rovetta     | N USP:11232156
 - Calvin Suzuki de Camargo   | N USP:11232420

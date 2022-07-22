@@ -7,7 +7,7 @@ using namespace std;
 int main() {  
     // define the server port and ip
     int port = 53400;
-    char ip[] = "127.0.0.1";
+    char ip[] = "192.168.0.8";
     Server server(port, ip);
     cout << server.startServer();
 }

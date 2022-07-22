@@ -22,7 +22,6 @@ string green = "\033[32m";
 string blue = "\033[34m";
 string def = "\033[39m";
 
-
 // Global variables
 atomic<unsigned int> clientCount{0};
 mutex m;
@@ -43,72 +42,6 @@ typedef struct {  // client struct
 client_t *clients[MAX_CLIENTS];
 
 void disconnectClient(client_t *);
-
-// TODO: FIXME
-void sendAndReadACK(const char *s, client_t *client) {
-    char ACK[BUFFER_SZ];
-    bool resendMessage = true;
-    int j = 0;
-    int receive;
-    string aux;
-    chrono::_V2::steady_clock::time_point start, end;
-
-    m.lock();
-
-    if (write(client->sockfd, s, strlen(s)) < 0) {
-        cout << "ERROR: write to descriptor failed" << endl;
-    }
-
-    start = chrono::steady_clock::now();
-    while (true) {
-        receive = recv(client->sockfd, ACK, 3, 0);
-        cout << "fuck?" << endl;
-        cout << ACK << endl;
-        // if (receive == -1){
-        //     // Error occurred
-
-        // }
-        
-        if(receive > 0){
-            // Analyse ACK
-            aux = ACK;
-            if (aux.find("ACK") == string::npos) {
-                if (j < 5) {
-                    cout << " > Server: Not received ACK from " << client->nick;
-                    cout << " (attempt " << (j + 1) << ")" << endl;
-                    // memset(ACK, 0, 3);
-                    j++;
-                    // sleep(1);
-                } else {
-                    cout << "> Server: " << client->nick << " is not responding. Disconnecting..." << endl;
-                    // Disconects this client
-                    client->leave_flag = true;
-                    break;
-                }
-            } else
-                break;
-        }
-        
-        if (resendMessage) {
-            start = chrono::steady_clock::now();
-            resendMessage = false;
-            if (write(client->sockfd, s, strlen(s)) < 0) {
-                cout << "ERROR: write to descriptor failed" << endl;
-                break;
-            }
-        }
-
-        end = chrono::steady_clock::now();
-        if (chrono::duration_cast<chrono::seconds>(end - start).count() > 1) {
-            resendMessage = true;
-        };
-        sleep(0.01);
-        cout << "fuck" << endl;
-    }
-
-    m.unlock();
-    return;
-}
 
 void sendWithoutACK(const char *s, client_t *client) {
     char message[strlen(s)+1];
@@ -145,8 +78,6 @@ void sendToAll(const char *s, const char * channel) {
             if ( !(clients[i]->leave_flag) ) {
                 if ( strcmp(clients[i]->channel, channel ) == 0 ) { 
                     sendWithoutACK(s, clients[i]);
-                    // thread thrd = thread(sendAndReadACK, s, clients[i] );
-                    // thrd.detach();
                 }
             }
         }
@@ -164,7 +95,6 @@ void sendToOne(const char *s, int uid) {
     for (int i = 0; i < MAX_CLIENTS; ++i) {
         if (clients[i]) {
             if (clients[i]->uid == uid) {
-                // sendAndReadACK( s, clients[i] );
                 sendWithoutACK(s, clients[i]);
                 // Server log
                 cout << red 
@@ -181,7 +111,7 @@ void announceDisconnect(client_t *client) {
     char sendBuff[BUFFER_SZ];
     sprintf(sendBuff, "** %s left the server! **", client->nick);
     client->leave_flag = true;
-    sendToAll(sendBuff); // sendToAll(sendBuff, client->channel);
+    sendToAll(sendBuff);
     return;
 }
 
