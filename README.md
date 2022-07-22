@@ -1,12 +1,10 @@
 # **Golden Chat** - an Internet Relay Chat
 
-<object width="425" height="350">
-  <param name="movie" value="https://youtu.be/9MnSZydcIG8" />
-  <param name="wmode" value="transparent" />
-  <embed src="https://youtu.be/9MnSZydcIG8"
-         type="application/x-shockwave-flash"
-         wmode="transparent" width="425" height="350" />
-</object>
+## Demonstração 
+<p align="center">
+  <a href="https://youtu.be/9MnSZydcIG8" title="Link Title"><img img width="500" height="281" src="https://img.youtube.com/vi/9MnSZydcIG8/0.jpg"/></a>
+</p>
+
 
 ## Membros
 - Caio Brandolim Rovetta     | N USP:11232156
